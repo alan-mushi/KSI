@@ -1,20 +1,17 @@
-import hashlib
-import sha3
+import hashlib, sha3
+from . import HASH_ALGO
 
 
 class Hash:
     @staticmethod
-    def factory(alg_name='sha3_256', data=b'', data2=b''):
+    def factory(algName=None, data=b''):
         """
-        Return a hash object initialized with data and data2 (if present).
+        Return a hash object initialized with data (if present).
         :param alg_name: Hash algorithm name (e.g. sha1, sha3...), must be available in hashlib/sha3 modules.
         :param data: Initialize the hash object with data.
-        :param data2: Call update(data2) on the created hash object.
         :return: A hash object.
         """
-        h = hashlib.new(alg_name, data)
+        if not algName:
+            algName = HASH_ALGO
 
-        if h and data2 != b'':
-            h.update(data2)
-
-        return h
+        return hashlib.new(algName, data)
