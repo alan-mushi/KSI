@@ -1,4 +1,5 @@
 import hashlib
+import sha3
 
 
 class Hash:
