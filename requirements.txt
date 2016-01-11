@@ -1,1 +1,2 @@
+graphviz==0.4.8
 pysha3==0.3

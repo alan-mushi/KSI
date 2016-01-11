@@ -12,7 +12,7 @@ def hash_factory(alg_name=HASH_ALGO, data=b''):
     :param data: Initialize the hash object with data.
     :return: A hash object.
     """
-    assert isinstance(data, bytes)
+    assert isinstance(data, bytes) or isinstance(data, bytearray)
     assert isinstance(alg_name, str)
 
     return hashlib.new(alg_name, data)
