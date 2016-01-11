@@ -1,6 +1,7 @@
 from unittest import TestCase
 from ksi.hash import *
 from ksi.keys import Keys
+from ksi.merkle_tree import Node
 import graphviz
 
 
@@ -22,6 +23,8 @@ class TestKeys(TestCase):
         assert str(
             keys.hash_tree_root) == '297b51ad691fd3d8e17a253274581e2ea2c958c976bb2ad76bdce8b51c7937f4'  # z_1_2_3_4 = h(z_1_2 || z_3_4)
 
+        assert keys.hash_tree_root.right_child.left_child.is_leaf() is True
+
         # Merkle tree diagram
         g = graphviz.Digraph(name="merkle tree", directory="./output", format="dot", node_attr={"shape": "box"})
         g = keys.hash_tree_root.to_graphviz(g)
@@ -41,3 +44,12 @@ class TestKeys(TestCase):
         g_z.node(seed.hex(), label="seed : " + str(seed))
         g_z.edge(seed.hex(), str(keys.keys[last_idx]), label="seed -> z_4")
         g_z.render()
+
+    def test_genKeysRandom(self):
+        # Test with random seed
+        random_keys = Keys(2**4, seed_size=16)
+
+    def test_coverage(self):
+        # For total coverage
+        with self.assertRaises(AttributeError):
+            Node()
