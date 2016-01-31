@@ -25,6 +25,7 @@ class Keys:
         self.seed_size = seed_size
         self.keys = []
         self.__gen_keys__()
+        self.hash_tree_root = None
         self.__gen_merkle_tree__()
 
     @staticmethod

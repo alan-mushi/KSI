@@ -1,5 +1,5 @@
 import hashlib
-from . import HASH_ALGO
+from ksi import HASH_ALGO
 
 if HASH_ALGO.startswith("sha3"):
     import sha3
