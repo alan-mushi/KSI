@@ -19,6 +19,7 @@ class Node:
         self.left_child = left_child
         self.right_child = right_child
         self.hash = hash
+        self.mark_for_graphviz = None
 
         # In case we are dealing with a node (thus _not_ a leaf) we compute the hash value for it
         if self.hash == bytes():
@@ -55,12 +56,23 @@ class Node:
         """
         Produces a standard tree print graph (left to right).
         To visualize install 'xdot' and 'graphviz' or change output format to 'png' or 'svg'.
+        The name of the node is its string representation but its label is only the first 16 chars of this
+        representation for convenience.
+        All nodes with mark_for_graphviz will be printed with the desired color, once added to the graph the
+        mark_for_graphviz attribute is removed.
         :param graph: The graph object to update
         :return: The updated graph object
         """
         assert isinstance(graph, graphviz.Digraph) or isinstance(graph, graphviz.Graph)
 
-        graph.node(str(self))
+        if self.mark_for_graphviz:
+            graph.node(str(self), label=str(self)[0:16]+"...",
+                       _attributes={"style": "filled", "fillcolor": self.mark_for_graphviz})
+        else:
+            graph.node(str(self), label=str(self)[0:16]+"...")
+
+        # Reset the mark
+        self.mark_for_graphviz = None
 
         if self.left_child:
             self.left_child.to_graphviz(graph)
@@ -71,3 +83,15 @@ class Node:
             graph.edge(str(self), str(self.right_child))
 
         return graph
+
+    def set_mark_z_i(self):
+        """
+        Color the node in blue for the next call to to_graphviz()
+        """
+        self.mark_for_graphviz = "blue"
+
+    def set_mark(self):
+        """
+        Color the node in green for the next call to to_graphviz()
+        """
+        self.mark_for_graphviz = "green"
