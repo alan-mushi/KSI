@@ -10,7 +10,6 @@ class Keys:
     """
 
     def __init__(self, l=2 ** 16, seed=b'', seed_size=130):
-        # TODO handle the rest of public/private key components
         """
         Constructor for keys
         :param l: The number of keys to generate for the Merkle tree (e.g. [z_1...z_l]), must be a power of two
@@ -76,7 +75,10 @@ class Keys:
         i = 0
 
         for left_node, right_node in zip(tree_stage_child[0::2], tree_stage_child[1::2]):
-            tree_stage.insert(i, Node(left_node, right_node))
+            parent = Node(left_node, right_node)
+            tree_stage.insert(i, parent)
+            left_node.parent = parent
+            right_node.parent = parent
             i += 1
 
         return tree_stage
