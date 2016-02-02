@@ -26,6 +26,7 @@ class TestKeys(TestCase):
         assert keys.hash_tree_root.right_child.left_child.is_leaf() is True
 
         # Merkle tree diagram
+        keys.hash_tree_root.clear_mark()  # This is for code coverage
         g = graphviz.Digraph(name="merkle tree", directory="./output", format="dot", node_attr={"shape": "box"})
         g = keys.hash_tree_root.to_graphviz(g)
         g.render()
