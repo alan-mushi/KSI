@@ -3,7 +3,7 @@ import graphviz
 
 
 class Node:
-    def __init__(self, left_child=None, right_child=None, hash=bytes()):
+    def __init__(self, left_child=None, right_child=None, hash: bytes=bytes()):
         """
         Node constructor.
         If you want to create a leaf only set the hash.
@@ -86,12 +86,41 @@ class Node:
 
     def set_mark_z_i(self):
         """
-        Color the node in blue for the next call to to_graphviz()
+        Color the node in cyan for the next call to to_graphviz().
+        This color corresponds to the z_i at the base of the hash chain.
         """
-        self.mark_for_graphviz = "blue"
+        self.mark_for_graphviz = "cyan"
 
     def set_mark(self):
         """
-        Color the node in green for the next call to to_graphviz()
+        Color the node in green for the next call to to_graphviz().
+        This color corresponds to a node whose value is saved in the hash chain.
         """
         self.mark_for_graphviz = "green"
+
+    def set_mark_compute(self):
+        """
+        Color the node in yellow for the next call to to_graphviz().
+        This color correspond to a node of the hash chain we need to compute.
+        """
+        self.mark_for_graphviz = "yellow"
+
+    def set_mark_exception(self):
+        """
+        Color the node in blue for the next call to to_graphviz().
+        This color correspond to a special case when z_i is pair, z_i+1 is thus impair but we cannot include z_i+1 in
+        the hash chain for obvious forgery reasons.
+        """
+        self.mark_for_graphviz = "blue"
+
+    def clear_mark(self):
+        """
+        Removes mark_for_graphviz for the whole sub-tree
+        """
+        self.mark_for_graphviz = None
+
+        if self.left_child:
+            self.left_child.clear_mark()
+
+        if self.right_child:
+            self.right_child.clear_mark()
