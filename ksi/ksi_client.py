@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 from time import sleep
+from copy import copy
 
 from ksi.certificate import Certificate
 from ksi.keys import Keys
@@ -15,6 +16,15 @@ from ksi.signature import Signature
 class KSIClient:
     """
     Class acting as the client.
+
+    The special case mentioned here happen when z_i is at a pair offset.
+    The problem is exposed in "Efficient Quantum-Immune Keyless Signatures with Identity" page 9, section 3.1, Fig 4.
+    Because we are hashing one additional step every i pair the algorithms need to "go" one step further.
+    To address this special case we detect it as soon as possible (i.e. in __compute_hash_chain__) and mask the special
+    node (z_i) to the recursive algorithm (because it is harder to patch).
+    Masking is done by running __compute_hash_chain_step__ on z_i.parent.parent instead of z_i.parent, then we add the
+    masked node manually (along with the special node coloring for graphviz).
+    Pair offset z_i are always on the right child of their parent, see ksi.Keys for the implementation.
 
     Notation:
         x = hash(message || z_i)
@@ -107,38 +117,61 @@ class KSIClient:
         logging.debug("Got a response for the timestamp request %s: %s", response.x.hexdigest(), response)
 
         z_i, i, x = self.requests[response.x.hexdigest()]
-        hash_chain = self.__compute_hash_chain__(z_i)  # type: Node
+        hash_chain = self.__compute_hash_chain__(z_i, i % 2 == 0)  # type: Node
 
-        sleep(1)  # Mandatory, sleep one second before releasing the key otherwise forgery is possible
+        # Mandatory, sleep one second before releasing the key otherwise forgery is possible
+        sleep(1)
 
         # Add the finalized signature to self.signatures for publication
         self.signatures[x] = Signature(self.certificate.id_client, i, z_i.hash, hash_chain, response)
 
-    def __compute_hash_chain__(self, z_i: Node) -> Node:
+    def __compute_hash_chain__(self, z_i: Node, pair_i: bool) -> Node:
         """
         Clone the nodes used in the hash chain (z_i to root of the Merkle tree).
         :param z_i: The node at which to start the hash chain (bottom to top)
         :type z_i: Node
+        :param pair_i: True if the index of z_i is pair (i.e. this is a special case, see the class documentation)
+        :type pair_i: bool
         :return: The root of the hash chain
         """
-        # TODO handle the impair node i
         assert isinstance(z_i, Node)
+        assert isinstance(z_i.parent, Node)
+
+        # i is pair so z_i is a special case
+        if pair_i:
+            z_i.set_mark_z_i()
+            # Go up one level
+            z_i = z_i.parent
+            assert isinstance(z_i.parent, Node)
 
         # Call the recursive function to clone nodes on the hash chain
         hash_chain_node = self.__compute_hash_chain_step__(z_i.parent, z_i)
         z_i.set_mark_z_i()
 
         # Set the z_i mark on the hash chain (left child)
-        if hash_chain_node.left_child and hash_chain_node.left_child.hash == z_i.hash:
-            hash_chain_node.left_child.set_mark_z_i()
+        if hash_chain_node.left_child and hash_chain_node.left_child.uuid == z_i.uuid:
+            if not pair_i:
+                hash_chain_node.left_child.set_mark_z_i()
 
-            # Set the exception mark (for _now_ z_i+1 *will* leak in the hash_chain)
+            # Set the exception mark
             if hash_chain_node.right_child:
                 hash_chain_node.right_child.set_mark_exception()
                 z_i.parent.right_child.set_mark_exception()
 
+        if pair_i:
+            z_i.set_mark_exception()
+            # Go down one level
+            z_i = z_i.right_child
+            # This node was left-out with the call to __compute_hash_chain_step__() so we need to add it ourselves
+            tmp = copy(z_i)
+            # Link tmp to its parent
+            tmp.parent = hash_chain_node.right_child
+            # Link the parent to tmp
+            hash_chain_node.right_child.right_child = tmp
+            hash_chain_node.right_child.set_mark_exception()
+
         # Set the z_i mark on the hash chain (right child)
-        if hash_chain_node.right_child and hash_chain_node.right_child.hash == z_i.hash:
+        if hash_chain_node.right_child and hash_chain_node.right_child.uuid == z_i.uuid:
             hash_chain_node.right_child.set_mark_z_i()
 
         # We want the whole tree so we need to get to the root of it
@@ -169,18 +202,20 @@ class KSIClient:
         node.set_mark_compute()
         # Apply the same algorithm for our parent
         parent_node = self.__compute_hash_chain_step__(node.parent, node)
-        right_node = Node(hash=bytes(node.right_child.hash))
-        left_node = Node(hash=bytes(node.left_child.hash))
-        current_node = Node(left_child=left_node, right_child=right_node, hash=bytes(node.hash))
 
         # If the call originate from the left child
         if node.left_child is origin_node:
             node.right_child.set_mark()
-            right_node.set_mark()
-
         else:
             node.left_child.set_mark()
-            left_node.set_mark()
+
+        right_node = copy(node.right_child)  # type: Node
+        left_node = copy(node.left_child)  # type: Node
+
+        current_node = copy(node)  # type: Node
+        current_node.left_child = left_node
+        current_node.right_child = right_node
+        current_node.set_mark_compute()
 
         if parent_node:
             # Link the parent's left child node to the current node
@@ -193,7 +228,6 @@ class KSIClient:
 
         # Link current node to it's parent
         current_node.parent = parent_node
-        current_node.set_mark_compute()
 
         return current_node
 
