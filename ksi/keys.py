@@ -6,7 +6,10 @@ from ksi.merkle_tree import *
 
 class Keys:
     """
-    Keys are the equivalent of z_i in KSI
+    Keys are the equivalent of z_i in KSI.
+
+    "Special" nodes (i.e. z_i with a pair index) and their "decoy" nodes (i.e. the parents of z_i special nodes) are
+    computed in __gen_keys__().
     """
 
     def __init__(self, l=2 ** 16, seed=b'', seed_size=130):
@@ -19,6 +22,7 @@ class Keys:
         assert isinstance(l, int) and self.__is_power_of_2__(l)
         assert isinstance(seed, bytes)
         assert isinstance(seed_size, int)
+
         self.l = l
         self.seed = seed
         self.seed_size = seed_size
@@ -33,7 +37,7 @@ class Keys:
 
     def __gen_keys__(self):
         """
-        Generate the z_i hash values
+        Generate the z_i hash values.
         """
         if not self.seed:
             self.seed = urandom(int(self.seed_size))
@@ -47,9 +51,17 @@ class Keys:
             self.keys.insert(0, n)
             n_prev = n
 
+        # Add the decoy nodes as parents of pair nodes.
+        # The pair nodes will _always_ be the right child of the decoy nodes.
+        for i in range(2, self.l + 1, 2):
+            n_pair = self.keys[i]  # type: Node
+            n_impair_prev = self.keys[i-1]  # type: Node
+            n_pair.parent = Node(hash=bytes(n_impair_prev.hash))
+            n_pair.parent.right_child = n_pair
+
     def __gen_merkle_tree__(self):
         """
-        Generate the Merkle hash tree
+        Generate the Merkle hash tree.
         """
         tree_stage = []
         tree_stage_num = int(log2(self.l))
@@ -75,6 +87,10 @@ class Keys:
         i = 0
 
         for left_node, right_node in zip(tree_stage_child[0::2], tree_stage_child[1::2]):
+
+            if right_node.parent:
+                right_node = right_node.parent
+
             parent = Node(left_node, right_node)
             tree_stage.insert(i, parent)
             left_node.parent = parent

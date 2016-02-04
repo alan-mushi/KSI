@@ -3,6 +3,9 @@ import graphviz
 
 
 class Node:
+    # See comment on self.uuid
+    ctr = 0
+
     def __init__(self, left_child=None, right_child=None, hash: bytes=bytes()):
         """
         Node constructor.
@@ -21,6 +24,10 @@ class Node:
         self.hash = hash
         self.mark_for_graphviz = None
 
+        # Universally Unique Identifier, used to identify a node
+        self.uuid = Node.ctr
+        Node.ctr += 1
+
         # In case we are dealing with a node (thus _not_ a leaf) we compute the hash value for it
         if self.hash == bytes():
             self.__compute_hash__()
@@ -38,7 +45,7 @@ class Node:
         hash_concat = bytearray(self.left_child.hash) + bytearray(self.right_child.hash)
         self.hash = hash_factory(data=hash_concat).digest()
 
-    def is_leaf(self):
+    def is_leaf(self) -> bool:
         """
         Return True if this node is a leaf.
         :return: Return True if this node is a leaf.
@@ -56,31 +63,31 @@ class Node:
         """
         Produces a standard tree print graph (left to right).
         To visualize install 'xdot' and 'graphviz' or change output format to 'png' or 'svg'.
-        The name of the node is its string representation but its label is only the first 16 chars of this
-        representation for convenience.
-        All nodes with mark_for_graphviz will be printed with the desired color, once added to the graph the
-        mark_for_graphviz attribute is removed.
+        The name (in graphviz terminology) of the node is its uuid, its label is the first 16 chars of the node's hash
+        in hexadecimal.
+        All nodes with mark_for_graphviz will be printed with the desired color, once added to the graph
+        mark_for_graphviz is set to None.
         :param graph: The graph object to update
         :return: The updated graph object
         """
         assert isinstance(graph, graphviz.Digraph) or isinstance(graph, graphviz.Graph)
 
         if self.mark_for_graphviz:
-            graph.node(str(self), label=str(self)[0:16]+"...",
+            graph.node(str(self.uuid), label=self.short_hex(),
                        _attributes={"style": "filled", "fillcolor": self.mark_for_graphviz})
         else:
-            graph.node(str(self), label=str(self)[0:16]+"...")
+            graph.node(str(self.uuid), label=self.short_hex())
 
         # Reset the mark
         self.mark_for_graphviz = None
 
         if self.left_child:
             self.left_child.to_graphviz(graph)
-            graph.edge(str(self), str(self.left_child))
+            graph.edge(str(self.uuid), str(self.left_child.uuid))
 
         if self.right_child:
             self.right_child.to_graphviz(graph)
-            graph.edge(str(self), str(self.right_child))
+            graph.edge(str(self.uuid), str(self.right_child.uuid))
 
         return graph
 
@@ -115,7 +122,7 @@ class Node:
 
     def clear_mark(self):
         """
-        Removes mark_for_graphviz for the whole sub-tree
+        Removes mark_for_graphviz for the whole sub-tree.
         """
         self.mark_for_graphviz = None
 
@@ -124,3 +131,24 @@ class Node:
 
         if self.right_child:
             self.right_child.clear_mark()
+
+    def __copy__(self):
+        """
+        Copy constructor, only copy the hash, the uuid and the mark_for_graphviz (used by the hash chain algorithm).
+        :return: A new object with copied hash, the same uuid and same mark_for_graphviz
+        """
+        new = Node(hash=bytes(self.hash))
+        new.uuid = self.uuid
+        new.mark_for_graphviz = None
+
+        if self.mark_for_graphviz:
+            new.mark_for_graphviz = "".join(self.mark_for_graphviz)
+
+        return new
+
+    def short_hex(self) -> str:
+        """
+        Return the short hex name/notation of a node (used for labels in graphviz).
+        :return: A string composed of the first 16 chars followed by "..."
+        """
+        return str(self)[:16] + "..."
