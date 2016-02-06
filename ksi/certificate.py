@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from ksi.identifier import Identifier
+from ksi.keys import is_power_of_2
 
 
 class Certificate:
@@ -9,7 +10,8 @@ class Certificate:
     This class is an empty shell as it is only used for presentation of the underlying data.
     """
 
-    def __init__(self, id_client: Identifier, z_0: bytes, r: bytes, t_0: datetime, id_server: Identifier):
+    def __init__(self, id_client: Identifier, z_0: bytes, r: bytes, t_0: datetime, id_server: Identifier,
+                 l: int=2 ** 16):
         """
         Create a ksi client's certificate.
         :param id_client: The Identifier of the client
@@ -27,12 +29,14 @@ class Certificate:
         assert isinstance(id_client, Identifier) and isinstance(id_server, Identifier)
         assert isinstance(z_0, bytes) and isinstance(r, bytes)
         assert isinstance(t_0, datetime)
+        assert isinstance(l, int) and is_power_of_2(l)
 
         self.id_client = id_client
         self.z_0 = z_0
         self.r = r
         self.t_0 = t_0
         self.id_server = id_server
+        self.l = l
 
     def __str__(self):
         """

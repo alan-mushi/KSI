@@ -7,6 +7,7 @@ from ksi.ksi_client import KSIClient
 from ksi.ksi_server import KSIServer
 from ksi.identifier import Identifier
 from ksi.keys import Keys
+from ksi.ksi_messages import KSIErrorCodes
 
 
 class TestKSIClient(TestCase):
@@ -18,6 +19,7 @@ class TestKSIClient(TestCase):
         l = 8
         keys = Keys(l=l, seed=b'SEED')
         client = KSIClient(server, keys=keys)
+        server.client_certificates[str(client.certificate.id_client)] = client.certificate
         sleep_counter = 2
 
         sleep(sleep_counter)
@@ -32,16 +34,16 @@ class TestKSIClient(TestCase):
         print("Signatures: ")
         for k, v in client.signatures.items(): # type: _sha3.SHA3, Signature
             print("[{k}] = {v}".format(k=k.hexdigest(), v=v))
+            assert v.S_t.status_code == KSIErrorCodes.NO_ERROR
             g2 = graphviz.Digraph(name="hash chain", directory="./output", format="dot", node_attr={"shape": "box"})
             g2 = v.c_i.to_graphviz(g2)
             g2.render()
 
         # +1 for "the sleep before publishing the signature" mechanism
-        sleep_counter += 3
+        sleep_counter += 2 + 1
         client.signatures = {}
         sleep(2)
         client.sign(b'BBBB')
-
 
         # Compute graphviz on the whole merkle graph
         g3 = graphviz.Digraph(name="after sign 2", directory="./output", format="dot", node_attr={"shape": "box"})

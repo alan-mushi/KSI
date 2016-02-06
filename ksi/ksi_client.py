@@ -9,8 +9,8 @@ from ksi.identifier import Identifier
 from ksi.hash import hash_factory
 from ksi.merkle_tree import Node
 from ksi.ksi_server import KSIServer
-from ksi.ksi_messages import TimestampRequest, TimestampResponse
-from ksi.signature import Signature
+from ksi.ksi_messages import TimestampRequest, TimestampResponse, KSIErrorCodes
+from ksi.signverify import Signature
 
 
 class KSIClient:
@@ -60,7 +60,7 @@ class KSIClient:
             z_0 = self.keys.keys[0].hash
             r = self.keys.hash_tree_root.hash
             t_0 = datetime.utcnow()
-            self.certificate = Certificate(Identifier(ID_C_str), z_0, r, t_0, self.server.ID_S)
+            self.certificate = Certificate(Identifier(ID_C_str), z_0, r, t_0, self.server.ID_S, self.keys.l)
 
         # Dictionary of requests made (indexed by x)
         self.requests = {}
@@ -94,9 +94,6 @@ class KSIClient:
         z_i = self.keys.keys[time_delta_offset]  # type: Node
         logging.debug("\tz_i used to sign: %s", z_i.hash.hex())
 
-        if (time_delta_offset + 1) % 2 == 0:
-            logging.critical("z_i+1 will leak in the hash chain (TODO is set)")
-
         # x = hash(message || z_i)
         x = hash_factory(data=bytes(message) + z_i.hash)
         logging.debug("\tx computed: %s", x.hexdigest())
@@ -110,11 +107,16 @@ class KSIClient:
     def sign_callback(self, response: TimestampResponse):
         """
         Called when the server did the timestamp on our timestamp request.
+        The signature is added only if: response.status_code == KSIErrorCodes.NO_ERROR
         :param response: The timestamp response for a request
         :type response: TimestampResponse
         """
         assert isinstance(response, TimestampResponse)
         logging.debug("Got a response for the timestamp request %s: %s", response.x.hexdigest(), response)
+
+        if response.status_code != KSIErrorCodes.NO_ERROR:
+            logging.info("Got a response with an error status code (%s): %s", str(response.status_code), str(response))
+            return
 
         z_i, i, x = self.requests[response.x.hexdigest()]
         hash_chain = self.__compute_hash_chain__(z_i, i % 2 == 0)  # type: Node
@@ -133,6 +135,7 @@ class KSIClient:
         :param pair_i: True if the index of z_i is pair (i.e. this is a special case, see the class documentation)
         :type pair_i: bool
         :return: The root of the hash chain
+        :rtype: Node
         """
         assert isinstance(z_i, Node)
         assert isinstance(z_i.parent, Node)

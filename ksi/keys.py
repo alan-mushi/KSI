@@ -4,6 +4,16 @@ from ksi.hash import *
 from ksi.merkle_tree import *
 
 
+def is_power_of_2(num: int) -> bool:
+    """
+    Return true if num is a power of 2.
+    :param num: The number to test
+    :type num: int
+    :return: True if num is a power of 2, False otherwise
+    """
+    return ((num & (num - 1)) == 0) and num > 0
+
+
 class Keys:
     """
     Keys are the equivalent of z_i in KSI.
@@ -12,14 +22,17 @@ class Keys:
     computed in __gen_keys__().
     """
 
-    def __init__(self, l=2 ** 16, seed=b'', seed_size=130):
+    def __init__(self, l: int=2 ** 16, seed: bytes=b'', seed_size: int=130):
         """
         Constructor for keys
         :param l: The number of keys to generate for the Merkle tree (e.g. [z_1...z_l]), must be a power of two
+        :type l: int
         :param seed: The seed, mainly for testing purposes, s_l = hash(seed)
+        :type seed: bytes
         :param seed_size: The size of the seed to generate (if seed is not supplied)
+        :type seed_size: int
         """
-        assert isinstance(l, int) and self.__is_power_of_2__(l)
+        assert isinstance(l, int) and is_power_of_2(l)
         assert isinstance(seed, bytes)
         assert isinstance(seed_size, int)
 
@@ -30,10 +43,6 @@ class Keys:
         self.__gen_keys__()
         self.hash_tree_root = None
         self.__gen_merkle_tree__()
-
-    @staticmethod
-    def __is_power_of_2__(num):
-        return ((num & (num - 1)) == 0) and num > 0
 
     def __gen_keys__(self):
         """
@@ -76,7 +85,7 @@ class Keys:
         self.hash_tree_root = current_tree_stage[0]
 
     @staticmethod
-    def __gen_parent_level_tree__(tree_stage_child):
+    def __gen_parent_level_tree__(tree_stage_child: list) -> list:
         """
         Generate one parent stage of a Merkle tree given the child stage.
         Here stage refers to "layers" or "lines" in a classic Merkle tree representation.
