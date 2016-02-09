@@ -8,18 +8,30 @@ from ksi.ksi_server import KSIServer
 from ksi.identifier import Identifier
 from ksi.keys import Keys
 from ksi.ksi_messages import KSIErrorCodes
+from ksi.dao import factory
+from ksi.dao_memory import DAOMemoryFactory, DAOMemoryClient
 
 
 class TestKSIClient(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        DAOMemoryFactory.dao_client = None
+        DAOMemoryFactory.dao_server = None
+        DAOMemoryFactory.client_certificates = {}
+
     def test_sign(self):
+        dao_factory = factory(DAOMemoryFactory)
+        dao_memory_client = dao_factory.get_client()  # type: DAOMemoryClient
+
         logging.basicConfig(level=logging.DEBUG)
 
         server_id = Identifier("server")
-        server = KSIServer(server_id)
+        server = KSIServer(server_id, dao_factory.get_server())
         l = 8
         keys = Keys(l=l, seed=b'SEED')
-        client = KSIClient(server, keys=keys)
-        server.client_certificates[str(client.certificate.id_client)] = client.certificate
+        client = KSIClient(server, dao_memory_client, keys=keys)
+
+        # dao_memory_server.client_certificates[str(client.certificate.id_client)] = client.certificate
         sleep_counter = 2
 
         sleep(sleep_counter)
@@ -32,7 +44,7 @@ class TestKSIClient(TestCase):
 
         # Compute graphviz only the hash chain
         print("Signatures: ")
-        for k, v in client.signatures.items(): # type: _sha3.SHA3, Signature
+        for k, v in client.dao.signatures.items(): # type: _sha3.SHA3, Signature
             print("[{k}] = {v}".format(k=k.hexdigest(), v=v))
             assert v.S_t.status_code == KSIErrorCodes.NO_ERROR
             g2 = graphviz.Digraph(name="hash chain", directory="./output", format="dot", node_attr={"shape": "box"})
@@ -52,7 +64,7 @@ class TestKSIClient(TestCase):
 
         # Compute graphviz only the hash chain
         print("Signatures: ")
-        for k, v in client.signatures.items(): # type: _sha3.SHA3, Signature
+        for k, v in client.dao.signatures.items(): # type: _sha3.SHA3, Signature
             print("[{k}] = {v}".format(k=k.hexdigest(), v=v))
             g4 = graphviz.Digraph(name="hash chain 2", directory="./output", format="dot", node_attr={"shape": "box"})
             g4 = v.c_i.to_graphviz(g4)
@@ -64,10 +76,12 @@ class TestKSIClient(TestCase):
             client.sign(b'CCC')
 
     def test_sign_coverage(self):
-        client = KSIClient(KSIServer(Identifier("server")))
+        dao_factory = factory(DAOMemoryFactory)
+        client = KSIClient(KSIServer(Identifier("server"), dao_factory.get_server()), dao_factory.get_client())
 
     def test_verify(self):
         # TODO
         # mock for coverage
-        client = KSIClient(KSIServer(Identifier("server")))
+        dao_factory = factory(DAOMemoryFactory)
+        client = KSIClient(KSIServer(Identifier("server"), dao_factory.get_server()), dao_factory.get_client())
         client.verify()

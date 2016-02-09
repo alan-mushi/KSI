@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from ksi.identifier import Identifier
 from ksi.ksi_messages import TimestampRequest, TimestampResponse, KSIErrorCodes
 from ksi.signverify import SignVerify, SIGN_KEY_FORMAT
-from ksi.certificate import Certificate
+from ksi.dao import DAOServer
 
 
 class KSIServer:
@@ -16,24 +16,22 @@ class KSIServer:
     as value.
     """
 
-    def __init__(self, ID_S: Identifier, client_certificates: dict={},
-                 filename_private_key: str="output/private_key."+SIGN_KEY_FORMAT):
+    def __init__(self, ID_S: Identifier, dao: DAOServer, filename_private_key: str="output/private_key."+SIGN_KEY_FORMAT):
         """
         Instantiate a server object.
         :param ID_S: The server's identifier
         :type ID_S: Identifier
         :param filename_private_key: The file containing the server's private key (used to sign)
         :type filename_private_key: str
-        :param client_certificates: A dict of user certificates indexed by their identifier as sting
-        :type client_certificates: dict
+        :param dao: DAO for the server
+        :type dao: DAOServer
         """
-        assert isinstance(ID_S, Identifier) and isinstance(client_certificates, dict)
+        assert isinstance(ID_S, Identifier) and isinstance(dao, DAOServer)
         assert isinstance(filename_private_key, str)
 
         self.ID_S = ID_S
-        self.client_certificates = client_certificates
+        self.dao = dao
         self.signer = SignVerify()
-        self.signed = {}  # type: dict[str, Certificate]
 
         try:
             self.signer.import_private_keys(filename_private_key)
@@ -60,12 +58,7 @@ class KSIServer:
 
         if status_code is KSIErrorCodes.NO_ERROR:
             msg, response = self.signer.sign(response)
-
-            if msg in self.signed:
-                logging.FATAL("Signed message is already in the dict of signed messages!")
-                raise ValueError("Signed message is already in the dict of signed messages!")
-            else:
-                self.signed[msg] = response.signature
+            self.dao.publish_signed_request(msg, response)
 
         logging.info("Responding with St: %s", str(response))
         callback(response)
@@ -87,7 +80,7 @@ class KSIServer:
         cert = None
 
         try:
-            cert = self.client_certificates[str(ID_C)]  # type: Certificate
+            cert = self.dao.get_user_certificate(ID_C)
         except KeyError:
             res = KSIErrorCodes.UNKNOWN_CERTIFICATE
 

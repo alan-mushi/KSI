@@ -11,6 +11,7 @@ from ksi.merkle_tree import Node
 from ksi.ksi_server import KSIServer
 from ksi.ksi_messages import TimestampRequest, TimestampResponse, KSIErrorCodes
 from ksi.signverify import Signature
+from ksi.dao import DAOClient
 
 
 class KSIClient:
@@ -30,7 +31,7 @@ class KSIClient:
         x = hash(message || z_i)
     """
 
-    def __init__(self, server: KSIServer, certificate: Certificate=None, keys: Keys=None, ID_C_str: str="client"):
+    def __init__(self, server: KSIServer, dao: DAOClient, certificate: Certificate=None, keys: Keys=None, ID_C_str: str="client"):
         """
         Create a new client with the provided parameters.
         :param server: The server to ask for timestamps
@@ -42,9 +43,10 @@ class KSIClient:
         :param ID_C_str: The client's identifier string
         :type ID_C_str: str
         """
-        assert isinstance(server, KSIServer)
+        assert isinstance(server, KSIServer) and isinstance(dao, DAOClient)
 
         self.server = server
+        self.dao = dao
         self.keys = keys
 
         # Generate keys with default values
@@ -62,10 +64,10 @@ class KSIClient:
             t_0 = datetime.utcnow()
             self.certificate = Certificate(Identifier(ID_C_str), z_0, r, t_0, self.server.ID_S, self.keys.l)
 
+        dao.publish_certificate(self.certificate)
+
         # Dictionary of requests made (indexed by x)
         self.requests = {}
-        # Dictionary of signatures (indexed by x)
-        self.signatures = {}
 
     def sign(self, message: bytes):
         """
@@ -89,6 +91,10 @@ class KSIClient:
         # time_delta + 1 is meant to correct the index (in case we sign using the first z_i we want to use z_1 and
         # not z_0)
         time_delta_offset = int(time_delta.total_seconds()) + 1
+
+        if time_delta_offset < 0:
+            logging.error("Attempt to sign with a certificate beginning in the future!")
+            raise ValueError
 
         # Take the appropriate z_i from the list (exclude the first item being z_0)
         z_i = self.keys.keys[time_delta_offset]  # type: Node
@@ -125,7 +131,8 @@ class KSIClient:
         sleep(1)
 
         # Add the finalized signature to self.signatures for publication
-        self.signatures[x] = Signature(self.certificate.id_client, i, z_i.hash, hash_chain, response)
+        sig = Signature(self.certificate.id_client, i, z_i.hash, hash_chain, response)
+        self.dao.publish_signature(x, sig)
 
     def __compute_hash_chain__(self, z_i: Node, pair_i: bool) -> Node:
         """
