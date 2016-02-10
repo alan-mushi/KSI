@@ -41,13 +41,15 @@ class KSIServer:
             filename_public_key = filename_private_key.replace("private", "public", 1)
             self.signer.export_keys(filename_public_key, filename_private_key)
 
-    def send_request(self, request: TimestampRequest, callback):
+    def send_request(self, request: TimestampRequest, callback) -> TimestampResponse:
         """
         Send a timestamp response for a given request, check if the fields of TimestampRequest object are valid.
         :param request: The request to answer to
         :type request: TimestampRequest
         :param callback: The function to callback once the TimestampResponse is computed.
             This callback have the following signature: callback(response: TimestampResponse)
+        :return: The TimestampResponse object (the very same one passed to the callback)
+        :rtype: TimestampResponse
         """
         assert isinstance(request, TimestampRequest)
 
@@ -62,6 +64,7 @@ class KSIServer:
 
         logging.info("Responding with St: %s", str(response))
         callback(response)
+        return response
 
     def __client_certificate_is_valid__(self, ID_C: Identifier, current_time: datetime) -> KSIErrorCodes:
         """

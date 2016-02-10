@@ -52,7 +52,7 @@ class SignVerify:
     """
     Sign and Verify cryptographic signatures.
     The signature use RSA with PKCS1 v1.5
-    The 'message' refer to : x || ID_C
+    The 'message' refer to : x || '|' || ID_C
     What is signed is actually: Crypto.SHA.new(message)
     By default the signatures are base64 encoded.
 
@@ -163,16 +163,21 @@ class SignVerify:
     @staticmethod
     def __msg__(S_t: TimestampResponse) -> bytes:
         """
-        Return the message to be signed as bytes: x || ID_C
+        Return the message to be signed as bytes: x || '|' || ID_C.
+        '|' act as a separator.
         :param S_t: The timestamp response containing x and ID_C
         :type S_t: TimestampResponse
-        :return: The concatenation of x and ID_C as bytes
+        :return: The concatenation of x, '|' and ID_C as bytes
         """
         assert isinstance(S_t, TimestampResponse) and S_t.x and S_t.ID_C
 
         s_id_c = str(S_t.ID_C)
+        S_t_x_bytes = S_t.x
 
-        return S_t.x.digest() + bytes(s_id_c, encoding="ascii")
+        if not isinstance(S_t.x, bytes):
+            S_t_x_bytes = S_t.x.digest()
+
+        return S_t_x_bytes + b'|' + bytes(s_id_c, encoding="ascii")
 
     def verify(self, sig: TimestampResponse, base64_encoded: bool=True) -> True:
         """
