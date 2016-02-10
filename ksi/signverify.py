@@ -4,9 +4,11 @@ from base64 import standard_b64encode, standard_b64decode
 
 from ksi import SIGN_KEY_LEN, SIGN_KEY_FORMAT
 from ksi.ksi_messages import TimestampResponse
+from ksi.certificate import Certificate
 from ksi.merkle_tree import Node
 from ksi.identifier import Identifier
 from Crypto.Hash import SHA
+from ksi.hash import *
 
 
 class Signature:
@@ -212,3 +214,58 @@ class SignVerify:
             _signature = standard_b64decode(_signature)
 
         return self.signer_verifier.verify(message, _signature)
+
+    def verify_id(signature: Signature, certificate: Certificate):
+       """
+        Verify the match between the certificate and the signature
+       :param certificate: The certificate to verifying the signature
+       :type certificate: Certificate
+       :return: True if the same identifiers is present in the certificate and the signature
+       :rtype: bool
+       """
+       assert  isinstance(certificate, Certificate) and isinstance(signature, Signature)
+
+       ID_certificate_C = certificate.id_client
+       ID_certificate_S = certificate.id_server
+
+       ID_signature_C = signature.ID_C
+       ID_signature_S = signature.S_t.ID_S
+
+       return ID_certificate_C == ID_signature_C and ID_certificate_S == ID_signature_S
+
+
+    def verify_zi(signature: Signature, certificate: Certificate):
+        """
+        Verify that the right zi was used
+        :param certificate:
+        :type certificate: Certificate
+        :return: True if t and t0+i are equals
+        :rtype: bool
+        """
+        assert  isinstance(certificate, Certificate) and isinstance(signature, Signature)
+
+        t = signature.S_t.t
+        i = signature.i
+        t0 = certificate.t_0.now()
+
+        return t == t0 + i
+
+    def verify_root(signature: Signature, certificate: Certificate):
+        """
+        Verify that by using zi and ci the root value r is reached
+        :param certificate:
+        :type certificate: Certificate
+        :return: True is the root value is reachable
+        :rtype: bool
+        """
+        assert  isinstance(certificate, Certificate) and isinstance(signature, Signature)
+
+        zi = signature.z_i
+        ci = signature.c_i
+        r = certificate.r
+
+        concat = bytearray(zi)+bytearray(ci)
+        r_compute = hash_factory(data=concat).digest()
+        return r == r_compute
+
+
