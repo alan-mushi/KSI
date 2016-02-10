@@ -33,6 +33,14 @@ class DAOServer:
         """
         pass
 
+    def get_signed_requests(self):
+        """
+        Get the list of signed requests.
+        :return: A list of all signed requests
+        :rtype: list
+        """
+        pass
+
 
 class DAOClient:
     def __init__(self):

@@ -18,6 +18,9 @@ class DAOMemoryServer(DAOServer):
     def get_user_certificate(self, id_client: Identifier) -> Certificate:
         return self.client_certificates[str(id_client)]
 
+    def get_signed_requests(self):
+        return dict(self.signed)
+
 
 class DAOMemoryClient(DAOClient):
     def __init__(self, client_certificates: dict):
