@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from Crypto.PublicKey import RSA  # ElGamal and DSA are also available
 from Crypto.Signature import PKCS1_v1_5
 from base64 import standard_b64encode, standard_b64decode
@@ -246,9 +248,9 @@ class SignVerify:
 
         t = signature.S_t.t
         i = signature.i
-        t0 = certificate.t_0.now()
+        t0 = certificate.t_0
 
-        return t == t0 + i
+        return t == t0 + timedelta(i)
 
     def verify_root(signature: Signature, certificate: Certificate):
         """
@@ -261,11 +263,12 @@ class SignVerify:
         assert  isinstance(certificate, Certificate) and isinstance(signature, Signature)
 
         zi = signature.z_i
-        ci = signature.c_i
-        r = certificate.r
+        z0 = certificate.z_0
 
-        concat = bytearray(zi)+bytearray(ci)
-        r_compute = hash_factory(data=concat).digest()
-        return r == r_compute
+        concat = bytearray(zi)
+        z_hash = hash_factory(data=concat).digest()
+        for i in range(0, signature.i):
+            z_hash = hash_factory(data=z_hash).digest()
+        return z0 == z_hash
 
 
