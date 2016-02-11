@@ -1,12 +1,11 @@
 import logging
-from base64 import standard_b64encode
 from flask import Flask, request, abort, jsonify, make_response
 from flask.ext.httpauth import HTTPBasicAuth
 
 from ksi.ksi_server import KSIServer
 from ksi.ksi_client import KSIClient
 from ksi.identifier import Identifier
-from ksi.ksi_messages import TimestampRequest, TimestampResponse
+from ksi.ksi_messages import TimestampRequest, TimestampResponse, bytes_to_base64_str
 from ksi import SIGN_KEY_FORMAT
 from ksi.keys import Keys
 from ksi.dao_memory import DAOMemoryFactory, DAOMemoryServer
@@ -28,8 +27,13 @@ dao = DAOMemoryFactory.get_server()  # type: DAOMemoryServer
 
 ksi_server = KSIServer(Identifier("server"), dao, filename_private_key="/tmp/private_key." + SIGN_KEY_FORMAT)
 
-# The list of authorized users and their passwords (this ought to move to a DB in the future...)
-user_dict = {'client': hash_factory(data=bytes('password', encoding="ascii") + SALT).digest()}
+
+def hash_salt(s: str) -> bytes:
+    return hash_factory(data=bytes(s, encoding='ascii') + SALT).digest()
+
+
+# The list of authorized users and their hash/salted passwords (this ought to move to a DB in the future...)
+user_dict = {'client': hash_salt('password')}
 
 
 def callback_log(x: TimestampResponse):
@@ -41,16 +45,8 @@ def callback_log(x: TimestampResponse):
 
 
 @auth.verify_password
-def verify_password(username: str, password: str) -> str:
-    res = False
-
-    try:
-        res = hash_factory(data=bytes(password, encoding="ascii") + SALT).digest() == user_dict[username]
-    except KeyError:
-        # User is not in user_dict
-        pass
-
-    return res
+def verify_password(username: str, password: str) -> bool:
+    return username in user_dict and hash_salt(password) == user_dict[username]
 
 
 @auth.error_handler
@@ -58,15 +54,6 @@ def unauthorized():
     return make_response(jsonify({'error': 'Unauthorized access'}), 401)
 
 
-# curl -u client:password -H "Content-Type: application/json" -X POST -d '{"x":"YWRjODNiMTllNzkzNDkxYjFjNmVhMGZkOGI0NmNkOWYzMmU1OTJmYwo=","ID_C":"client"}' http://localhost:5000/ksiapi/v0.1/sign
-# {
-#   "ID_C": "org.ksi.client",
-#   "ID_S": "org.ksi.server",
-#   "signature": "None",
-#   "status_code": "CERTIFICATE_EXPIRED",
-#   "t": "2016-02-10T15:27:44.746717",
-#   "x": "YWRjODNiMTllNzkzNDkxYjFjNmVhMGZkOGI0NmNkOWYzMmU1OTJmYwo="
-# }
 @app.route(API_ROUTE_BASE + 'sign', methods=['POST'])
 @auth.login_required
 def sign_request():
@@ -84,8 +71,7 @@ def get_signed_timestamps():
     """
     Return all the signed timestamps/requests, see API reference in the wiki.
     """
-    res = {str(standard_b64encode(k), encoding="ascii"): str(v, encoding="ascii")
-           for k, v in dao.get_signed_requests().items()}
+    res = {bytes_to_base64_str(k): str(v, encoding='ascii') for k, v in dao.get_signed_requests().items()}
 
     return jsonify({'signed_timestamps': res})
 

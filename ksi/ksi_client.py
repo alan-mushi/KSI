@@ -71,14 +71,16 @@ class KSIClient:
         # Dictionary of requests made (indexed by x)
         self.requests = {}
 
-    def sign(self, message: bytes):
+    def sign(self, message: bytes, use_rest_api=False):
         """
         Ask the server to sign the message.
         At the end of this function self.requests will contain an entry at x for self.sign_callback().
         :param message: The message to sign
         :type message: bytes
+        :param use_rest_api: Set to True if you want to use the remote REST API, False otherwise (e.g. travis)
+        :type use_rest_api: bool
         """
-        assert isinstance(message, bytes)
+        assert isinstance(message, bytes) and isinstance(use_rest_api, bool)
 
         current_time = datetime.utcnow()
         logging.debug("Sign request at %s for message: %s", current_time.isoformat(), message)
@@ -107,13 +109,15 @@ class KSIClient:
         logging.debug("\tx computed: %s", x.hexdigest())
         # Insert x in self.requests
         self.requests[x.hexdigest()] = (z_i, time_delta_offset, x)
+        request = TimestampRequest(x.digest(), self.certificate.id_client)
 
         # Create the request and send it to the server to get S_t
-        request = TimestampRequest(x.digest(), self.certificate.id_client)
-        self.server.send_request(request, lambda response: self.sign_callback(response))
-        # r = requests.post(API_HOST_PORT + API_ROUTE_BASE + 'sign', data=request.to_json())
-        # response = TimestampResponse.from_json(r.json())
-        # self.sign_callback(response)  # TODO: test
+        if use_rest_api:
+            r = requests.post(API_HOST_PORT + API_ROUTE_BASE + 'sign', data=request.to_json())
+            response = TimestampResponse.from_json(r.json())
+            self.sign_callback(response)  # TODO: test
+        else:
+            self.server.send_request(request, lambda _response: self.sign_callback(_response))
 
     def sign_callback(self, response: TimestampResponse):
         """
