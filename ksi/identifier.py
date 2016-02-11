@@ -14,10 +14,9 @@ class Identifier:
         :param id: The id (rightmost field in reverse DNS notation)
         """
         assert isinstance(id, str) and id.isprintable()
-        assert id.islower() and id.isalnum() and id.find('.') == -1
+        assert id.islower() and id.isalnum() and id.find(IDENTIFIER_SEPARATOR) == -1
 
-        self.id = IDENTIFIER_BASE_NAME + IDENTIFIER_SEPARATOR + str(id.encode(encoding='ascii').lower(),
-                                                                    encoding='ascii')
+        self.id = IDENTIFIER_BASE_NAME + str(id.encode(encoding='ascii').lower(), encoding='ascii')
 
     def __str__(self):
         return self.id

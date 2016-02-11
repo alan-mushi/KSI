@@ -5,6 +5,7 @@ from base64 import standard_b64encode, standard_b64decode
 from dateutil.parser import parse
 
 from ksi.identifier import Identifier
+from ksi import IDENTIFIER_BASE_NAME
 
 
 def bytes_to_base64_str(b: bytes) -> str:
@@ -59,7 +60,10 @@ class TimestampRequest:
         """
         assert 'x' in json_obj and 'ID_C' in json_obj
 
-        return TimestampRequest(standard_b64decode(json_obj['x']), Identifier(json_obj['ID_C']))
+        id = json_obj['ID_C']
+        id = id[len(IDENTIFIER_BASE_NAME):]  # Removes IDENTIFIER_BASE_NAME from the beginning of the identifier string
+
+        return TimestampRequest(standard_b64decode(json_obj['x']), Identifier(id))
 
 
 @unique
@@ -140,7 +144,7 @@ class TimestampResponse:
                            'signature': sig_str})
 
     @staticmethod
-    def from_json(json_obj: dict):
+    def from_json_dict(json_obj: dict):
         """
         :param json_obj: A JSON representation of the TimestampResponse object
         :type json_obj: dict
@@ -154,10 +158,10 @@ class TimestampResponse:
         assert 't' in json_obj
         assert 'signature' in json_obj
 
-        status_code = KSIErrorCodes(int(json_obj['status_code']))
+        status_code = KSIErrorCodes[json_obj['status_code']]
         x = standard_b64decode(json_obj['x'])
-        ID_C = Identifier(json_obj['ID_C'])
-        ID_S = Identifier(json_obj['ID_S'])
+        ID_C = Identifier(json_obj['ID_C'][len(IDENTIFIER_BASE_NAME):])
+        ID_S = Identifier(json_obj['ID_S'][len(IDENTIFIER_BASE_NAME):])
         t = parse(json_obj['t'])
 
         if json_obj['signature'] == "None":

@@ -11,7 +11,7 @@ HASH_ALGO_OID = {"sha3_256": "2.16.840.1.101.3.4.2.8",
 Used by the Identifier, see Identifier's documentation
 """
 IDENTIFIER_SEPARATOR = '.'
-IDENTIFIER_BASE_NAME = "org" + IDENTIFIER_SEPARATOR + "ksi"
+IDENTIFIER_BASE_NAME = "org" + IDENTIFIER_SEPARATOR + "ksi" + IDENTIFIER_SEPARATOR
 
 """
 Used by SignFactory, see SignFactory's documentation.
