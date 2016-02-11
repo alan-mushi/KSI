@@ -18,6 +18,12 @@ from ksi import API_ROUTE_BASE
 # This file is executable as a "standalone" script.
 #
 
+logging.basicConfig(level=logging.DEBUG)
+
+# Filter messages to come only from the server's logger
+for handler in logging.root.handlers:
+    handler.addFilter(logging.Filter("ksi.ksi_server.KSIServer"))
+
 app = Flask(__name__)
 auth = HTTPBasicAuth()
 SALT = b'KSI_IS_MAGIC'
@@ -77,7 +83,6 @@ def get_signed_timestamps():
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
 
     # We add something to the DAO
     client = KSIClient(ksi_server, dao_factory.get_client(), keys=Keys(l=8, seed=b'SEED'))

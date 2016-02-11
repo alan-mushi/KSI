@@ -60,8 +60,10 @@ class TimestampRequest:
         """
         assert 'x' in json_obj and 'ID_C' in json_obj
 
-        id = json_obj['ID_C']
-        id = id[len(IDENTIFIER_BASE_NAME):]  # Removes IDENTIFIER_BASE_NAME from the beginning of the identifier string
+        id = json_obj['ID_C']  # type: str
+        if id.startswith(IDENTIFIER_BASE_NAME):
+            # Removes IDENTIFIER_BASE_NAME from the beginning of the identifier string
+            id = id[len(IDENTIFIER_BASE_NAME):]
 
         return TimestampRequest(standard_b64decode(json_obj['x']), Identifier(id))
 

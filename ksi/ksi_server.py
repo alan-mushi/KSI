@@ -32,11 +32,12 @@ class KSIServer:
         self.ID_S = ID_S
         self.dao = dao
         self.signer = SignVerify()
+        self.logger = logging.getLogger(__name__ + '.' + self.__class__.__name__)
 
         try:
             self.signer.import_private_keys(filename_private_key)
         except FileNotFoundError:
-            logging.error("%s does not exist, generating and exporting keys", filename_private_key)
+            self.logger.error("%s does not exist, generating and exporting keys", filename_private_key)
             self.signer.generate_keys()
             filename_public_key = filename_private_key.replace("private", "public", 1)
             self.signer.export_keys(filename_public_key, filename_private_key)
@@ -53,7 +54,7 @@ class KSIServer:
         """
         assert isinstance(request, TimestampRequest)
 
-        logging.info("Received timestamp request: %s", str(request))
+        self.logger.info("Received timestamp request: %s", str(request))
         t = datetime.utcnow()  # We take the time at the reception of the request
         status_code = self.__client_certificate_is_valid__(request.ID_C, t)
         response = TimestampResponse(request.x, self.ID_S, request.ID_C, t, status_code)
@@ -62,7 +63,7 @@ class KSIServer:
             msg, response = self.signer.sign(response)
             self.dao.publish_signed_request(msg, response)
 
-        logging.info("Responding with St: %s", str(response))
+        self.logger.info("Responding with St: %s", str(response))
         callback(response)
         return response
 

@@ -1,6 +1,4 @@
 import logging
-from email import header
-
 import requests
 from datetime import datetime, timedelta
 from time import sleep
@@ -93,6 +91,7 @@ class KSIClient:
 
         # Dictionary of requests made (indexed by x)
         self.requests = {}
+        self.logger = logging.getLogger(__name__ + '.' + self.__class__.__name__)
 
     def sign(self, message: bytes, use_rest_api=False):
         """
@@ -106,11 +105,11 @@ class KSIClient:
         assert isinstance(message, bytes) and isinstance(use_rest_api, bool)
 
         current_time = datetime.utcnow()
-        logging.debug("Sign request at %s for message: %s", current_time.isoformat(), message)
+        self.logger.debug("Sign request at %s for message: %s", current_time.isoformat(), message)
 
         # Assert we have a z_i to sign this message
         if not (current_time < self.certificate.t_0 + timedelta(seconds=self.keys.l)):
-            logging.error("Attempt to sign with an outdated certificate!")
+            self.logger.error("Attempt to sign with an outdated certificate!")
             raise ValueError
 
         # Compute the time difference between now and t_0 of the certificate
@@ -120,16 +119,16 @@ class KSIClient:
         time_delta_offset = int(time_delta.total_seconds()) + 1
 
         if time_delta_offset < 0:
-            logging.error("Attempt to sign with a certificate beginning in the future!")
+            self.logger.error("Attempt to sign with a certificate beginning in the future!")
             raise ValueError
 
         # Take the appropriate z_i from the list (exclude the first item being z_0)
         z_i = self.keys.keys[time_delta_offset]  # type: Node
-        logging.debug("\tz_i used to sign: %s", z_i.hash.hex())
+        self.logger.debug("\tz_i used to sign: %s", z_i.hash.hex())
 
         # x = hash(message || z_i)
         x = hash_factory(data=bytes(message) + z_i.hash)
-        logging.debug("\tx computed: %s", x.hexdigest())
+        self.logger.debug("\tx computed: %s", x.hexdigest())
         # Insert x in self.requests
         self.requests[x.hexdigest()] = (z_i, time_delta_offset, x)
         request = TimestampRequest(x.digest(), self.certificate.id_client)
@@ -154,10 +153,10 @@ class KSIClient:
         :type response: TimestampResponse
         """
         assert isinstance(response, TimestampResponse)
-        logging.debug("Got a response for the timestamp request %s: %s", response.x.hex(), response)
+        self.logger.debug("Got a response for the timestamp request %s: %s", response.x.hex(), response)
 
         if response.status_code != KSIErrorCodes.NO_ERROR:
-            logging.info("Got a response with an error status code (%s): %s", str(response.status_code), str(response))
+            self.logger.info("Got a response with an error status code (%s): %s", str(response.status_code), str(response))
             return
 
         z_i, i, x = self.requests[response.x.hex()]
