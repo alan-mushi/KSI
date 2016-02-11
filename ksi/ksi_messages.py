@@ -1,10 +1,17 @@
+import json
 from datetime import datetime
 from enum import Enum, unique
-from flask import jsonify
 from base64 import standard_b64encode, standard_b64decode
 from dateutil.parser import parse
 
 from ksi.identifier import Identifier
+
+
+def bytes_to_base64_str(b: bytes) -> str:
+    if not b:
+        return "None"
+
+    return str(standard_b64encode(b), encoding="ascii")
 
 
 class TimestampRequest:
@@ -15,14 +22,15 @@ class TimestampRequest:
         x = hash(message || z_i)
     """
 
-    def __init__(self, x, ID_C: Identifier):
+    def __init__(self, x: bytes, ID_C: Identifier):
         """
         Create an object timestamp request with the provided arguments.
         :param x: The hash of the request
+        :type x: bytes
         :param ID_C: The client's identifier
         :type ID_C: Identifier
         """
-        assert isinstance(ID_C, Identifier)
+        assert isinstance(x, bytes) and isinstance(ID_C, Identifier)
 
         self.x = x
         self.ID_C = ID_C
@@ -30,33 +38,28 @@ class TimestampRequest:
     def __str__(self) -> str:
         """
         :return: A string representation of the object
+        :rtype: str
         """
-        x_str = None
-
-        if isinstance(self.x, bytes):
-            x_str = self.x
-        else:
-            x_str = self.x.hexdigest()
-
-        return "({x}, {idc})".format(x=x_str, idc=str(self.ID_C))
+        return "({x}, {idc})".format(x=self.x.hex(), idc=str(self.ID_C))
 
     def to_json(self) -> str:
         """
         :return: The JSON string representation of the object
         :rtype: str
         """
-        return jsonify({'x': standard_b64encode(self.x), 'ID_C': str(self.ID_C)})
+        return json.dumps({'x': bytes_to_base64_str(self.x), 'ID_C': str(self.ID_C)})
 
     @staticmethod
-    def from_json(json: str):
+    def from_json(json_obj: dict):
         """
-        :param json: JSON representation of a TimestampRequest object
-        :type json: str
+        :param json_obj: JSON representation of a TimestampRequest object
+        :type json_obj: dict
         :return: A new TimestampRequest from the json parameter
         :rtype: TimestampRequest
         """
-        assert json['x'] and json['ID_C']
-        return TimestampRequest(standard_b64decode(json['x']), Identifier(json['ID_C']))
+        assert 'x' in json_obj and 'ID_C' in json_obj
+
+        return TimestampRequest(standard_b64decode(json_obj['x']), Identifier(json_obj['ID_C']))
 
 
 @unique
@@ -106,21 +109,18 @@ class TimestampResponse:
         :return: A string representation of the object
         :rtype: str
         """
-        x_str = None
-
         if isinstance(self.x, bytes):
             x_str = self.x.hex()
         else:
             x_str = self.x.hexdigest()
 
-        return "(x: {x}, ID_C: {idc})\t=>\t\
-                (status_code: {status_code}, ID_S: {ids}, t: {t}, signature: {sig})".format(x=x_str,
-                                                                                            idc=str(self.ID_C),
-                                                                                            status_code=str(
-                                                                                                self.status_code),
-                                                                                            ids=str(self.ID_S),
-                                                                                            t=self.t.isoformat(),
-                                                                                            sig=str(self.signature))
+        return "(x: {x}, ID_C: {idc})\t=>\t(status_code: {status_code}, ID_S: {ids}, t: {t}, signature: {sig})".format(
+            x=x_str,
+            idc=str(self.ID_C),
+            status_code=str(self.status_code),
+            ids=str(self.ID_S),
+            t=self.t.isoformat(),
+            sig=bytes_to_base64_str(self.signature))
 
     def to_json(self) -> str:
         """
@@ -132,28 +132,38 @@ class TimestampResponse:
         if self.signature:
             sig_str = str(self.signature, encoding="ascii")
 
-        return jsonify({'status_code': str(self.status_code),
-                        'x': str(standard_b64encode(self.x), encoding="ascii"),
-                        'ID_C': str(self.ID_C),
-                        'ID_S': str(self.ID_S),
-                        't': self.t.isoformat(),
-                        'signature': sig_str})
+        return json.dumps({'status_code': str(self.status_code),
+                           'x': bytes_to_base64_str(self.x),
+                           'ID_C': str(self.ID_C),
+                           'ID_S': str(self.ID_S),
+                           't': self.t.isoformat(),
+                           'signature': sig_str})
 
     @staticmethod
-    def from_json(json: str):
+    def from_json(json_obj: dict):
         """
-        :param json: A JSON representation of the TimestampResponse object
-        :type json: str
-        :return: A new TimestampResponse built from the json parameter
+        :param json_obj: A JSON representation of the TimestampResponse object
+        :type json_obj: dict
+        :return: A new TimestampResponse built from the json_str parameter
         :rtype: TimestampResponse
         """
-        assert json['status_code'] and json['x'] and json['ID_C'] and json['ID_S'] and json['t'] and json['signature']
-        status_code = KSIErrorCodes(int(json['status_code']))
-        x = standard_b64decode(json['x'])
-        ID_C = Identifier(json['ID_C'])
-        ID_S = Identifier(json['ID_S'])
-        t = parse(json['t'])
-        signature = standard_b64decode(json['signature'])
+        assert 'status_code' in json_obj
+        assert 'x' in json_obj
+        assert 'ID_C' in json_obj
+        assert 'ID_S' in json_obj
+        assert 't' in json_obj
+        assert 'signature' in json_obj
+
+        status_code = KSIErrorCodes(int(json_obj['status_code']))
+        x = standard_b64decode(json_obj['x'])
+        ID_C = Identifier(json_obj['ID_C'])
+        ID_S = Identifier(json_obj['ID_S'])
+        t = parse(json_obj['t'])
+
+        if json_obj['signature'] == "None":
+            signature = None
+        else:
+            signature = standard_b64decode(json_obj['signature'])
 
         res = TimestampResponse(x, ID_S, ID_C, t, status_code)
         res.signature = signature

@@ -11,6 +11,7 @@ from ksi import SIGN_KEY_FORMAT
 from ksi.keys import Keys
 from ksi.dao_memory import DAOMemoryFactory, DAOMemoryServer
 from ksi.dao import factory
+from ksi.hash import hash_factory
 from ksi import API_ROUTE_BASE
 
 #
@@ -20,6 +21,7 @@ from ksi import API_ROUTE_BASE
 
 app = Flask(__name__)
 auth = HTTPBasicAuth()
+SALT = b'KSI_IS_MAGIC'
 
 dao_factory = factory(DAOMemoryFactory)
 dao = DAOMemoryFactory.get_server()  # type: DAOMemoryServer
@@ -27,7 +29,7 @@ dao = DAOMemoryFactory.get_server()  # type: DAOMemoryServer
 ksi_server = KSIServer(Identifier("server"), dao, filename_private_key="/tmp/private_key." + SIGN_KEY_FORMAT)
 
 # The list of authorized users and their passwords (this ought to move to a DB in the future...)
-user_dict = {'client': 'password'}
+user_dict = {'client': hash_factory(data=bytes('password', encoding="ascii") + SALT).digest()}
 
 
 def callback_log(x: TimestampResponse):
@@ -38,16 +40,17 @@ def callback_log(x: TimestampResponse):
     logging.info("Got callback with x: %s", x)
 
 
-@auth.get_password
-def get_password(username: str) -> str:
-    password = None
+@auth.verify_password
+def verify_password(username: str, password: str) -> str:
+    res = False
+
     try:
-        password = user_dict[username]
+        res = hash_factory(data=bytes(password, encoding="ascii") + SALT).digest() == user_dict[username]
     except KeyError:
         # User is not in user_dict
         pass
 
-    return password
+    return res
 
 
 @auth.error_handler
@@ -62,7 +65,7 @@ def unauthorized():
 #   "signature": "None",
 #   "status_code": "CERTIFICATE_EXPIRED",
 #   "t": "2016-02-10T15:27:44.746717",
-#  "x": "YWRjODNiMTllNzkzNDkxYjFjNmVhMGZkOGI0NmNkOWYzMmU1OTJmYwo="
+#   "x": "YWRjODNiMTllNzkzNDkxYjFjNmVhMGZkOGI0NmNkOWYzMmU1OTJmYwo="
 # }
 @app.route(API_ROUTE_BASE + 'sign', methods=['POST'])
 @auth.login_required
@@ -83,6 +86,7 @@ def get_signed_timestamps():
     """
     res = {str(standard_b64encode(k), encoding="ascii"): str(v, encoding="ascii")
            for k, v in dao.get_signed_requests().items()}
+
     return jsonify({'signed_timestamps': res})
 
 
@@ -98,19 +102,27 @@ if __name__ == '__main__':
 
     # Example of queries run against the API:
     #
-    # curl -u client:password -H "Content-Type: application/json" -X POST -d '{"x":"YWRjODNiMTllNzkzNDkxYjFjNmVhMGZkOGI0NmNkOWYzMmU1OTJmYwo=","ID_C":"client"}' http://localhost:5000/ksi/api/v0.1/sign && echo -e "\n----------------" && curl -H "Content-Type: application/json" http://localhost:5000/ksi/api/v0.1/signed && echo
+    # curl -s -u client:password -H "Content-Type: application/json" -X POST -d \
+    #   '{"x":"YWRjODNiMTllNzkzNDkxYjFjNmVhMGZkOGI0NmNkOWYzMmU1OTJmYwo=","ID_C":"client"}' \
+    #   http://localhost:5000/ksi/api/v0.1/sign \
+    #   | python -m json.tool && \
+    # echo -e "\n----------------" && \
+    # curl -s -H "Content-Type: application/json" http://localhost:5000/ksi/api/v0.1/signed \
+    #   | python -m json.tool && \
+    # echo
     # {
-    # 	"ID_C": "org.ksi.client",
-    # 		"ID_S": "org.ksi.server",
-    # 		"signature": "None",
-    # 		"status_code": "CERTIFICATE_EXPIRED",
-    # 		"t": "2016-02-10T15:58:35.399558",
-    # 		"x": "YWRjODNiMTllNzkzNDkxYjFjNmVhMGZkOGI0NmNkOWYzMmU1OTJmYwo="
+    #     "t": "2016-02-11T12:52:26.756742",
+    #     "status_code": "NO_ERROR",
+    #     "ID_S": "org.ksi.server",
+    #     "x": "YWRjODNiMTllNzkzNDkxYjFjNmVhMGZkOGI0NmNkOWYzMmU1OTJmYwo=",
+    #     "signature": "HHNT...Vz3mga/W+ZpelcnRi3A==",
+    #     "ID_C": "org.ksi.client"
     # }
+    #
     # ----------------
     # {
-    # 	"signed_timestamps": {
-    # 		"YWRjODNiMTllNzkzNDkxYjFjNmVhMGZkOGI0NmNkOWYzMmU1OTJmYwpvcmcua3NpLmNsaWVudA==": "p7MwqNKWkPfh57XEOimMJ2cWAagvFigxzvBeNKf9yZi8uITIha7eMl+qvfmi7QSgFI/xV9+xeaPKQiV/H4L0XkUgI6rNj+GNXf/394wxkRj6JjihoxL+EMnBD7A4w8r/b8q6CysVdl3Y79CYR0t8CtG5byGdkSVWd0d7U8BniSrbmzMJiPUHWtiuytQOJK1LfAkLm+fW7XZBBUqggzgnvXKY4U0aPHnbX37cuFvGNKUlQCA39GMGWZOd6ERVTOGoZi0adZIwdOv25+se8tZ89mPgwj5w+pT/fDn2T4shytPOZ5OzvYsejEa1OcYbl+pMlFS+PJEvriDQobsdjsVAmA==",
-    # 		"yp6EILHLPnl3BWOkkUyi7qPw4PNigF9mAENgsqHJ4uRvcmcua3NpLmNsaWVudA==": "PsJTYEVcaSP3Zx18ipYJRfQ3Q3atg0IB5aDK9VkLc917BirUC7g/YUJngdNzGZnNXQeCjQldbWiynB6Yosw0Ewp9S+eG0CCuVsydKoa8GuAv6k/JJxzquXjpcCFwThbZZ2GMT29WHsHDZ9MsBBkUcfYMQ2KfrRJoYf1lrrGmMrnjsvQdqZgx6sipiVBGpleTPxuzeR84Wtghju+sea5JFjsfh60zRC693VwxfdauUw84CRBoqLYvZ1SFT1LatwxDMzkKDhJHyXYGVAj4X5OejRxcAGiHheZXsUlppDzHrAq22wzLChD1sS/FnaBu/4Y1EmlCq3bsWIbn6nliXVbX/Q=="
-    # 	}
+    #     "signed_timestamps": {
+    #         "YWRjODNiMTllNzkzNDkxYjF...mU1OTJmYwp8b3JnLmtzaS5jbGllbnQ=": "HHNT...Vz3mga/W+ZpelcnRi3A==",
+    #         "yp6EILHLPnl3BWOkkUyi7qPw4PNigF9mAENgsqHJ4uR8b3JnLmtzaS5jbGllbnQ=": "s6A/2tjlikxxFe...X4cqo/1w=="
+    #     }
     # }

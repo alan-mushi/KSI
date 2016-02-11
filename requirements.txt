@@ -4,3 +4,4 @@ pycrypto==2.6.1
 python-dateutil==2.4.2
 Flask==0.10.1
 flask-httpauth==2.7.1
+requests==2.9.1

@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timedelta
 from time import sleep
 from copy import copy
+import requests
 
 from ksi.certificate import Certificate
 from ksi.keys import Keys
@@ -12,6 +13,7 @@ from ksi.ksi_server import KSIServer
 from ksi.ksi_messages import TimestampRequest, TimestampResponse, KSIErrorCodes
 from ksi.signverify import Signature
 from ksi.dao import DAOClient
+from ksi import API_ROUTE_BASE, API_HOST_PORT
 
 
 class KSIClient:
@@ -107,8 +109,11 @@ class KSIClient:
         self.requests[x.hexdigest()] = (z_i, time_delta_offset, x)
 
         # Create the request and send it to the server to get S_t
-        request = TimestampRequest(x, self.certificate.id_client)
+        request = TimestampRequest(x.digest(), self.certificate.id_client)
         self.server.send_request(request, lambda response: self.sign_callback(response))
+        # r = requests.post(API_HOST_PORT + API_ROUTE_BASE + 'sign', data=request.to_json())
+        # response = TimestampResponse.from_json(r.json())
+        # self.sign_callback(response)  # TODO: test
 
     def sign_callback(self, response: TimestampResponse):
         """
@@ -118,13 +123,13 @@ class KSIClient:
         :type response: TimestampResponse
         """
         assert isinstance(response, TimestampResponse)
-        logging.debug("Got a response for the timestamp request %s: %s", response.x.hexdigest(), response)
+        logging.debug("Got a response for the timestamp request %s: %s", response.x.hex(), response)
 
         if response.status_code != KSIErrorCodes.NO_ERROR:
             logging.info("Got a response with an error status code (%s): %s", str(response.status_code), str(response))
             return
 
-        z_i, i, x = self.requests[response.x.hexdigest()]
+        z_i, i, x = self.requests[response.x.hex()]
         hash_chain = self.__compute_hash_chain__(z_i, i % 2 == 0)  # type: Node
 
         # Mandatory, sleep one second before releasing the key otherwise forgery is possible
