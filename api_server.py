@@ -69,7 +69,7 @@ def sign_request():
     if not request.json or 'x' not in request.json or 'ID_C' not in request.json:
         abort(400)
 
-    return ksi_server.send_request(TimestampRequest.from_json(request.json), callback_log).to_json(), 201
+    return ksi_server.get_timestamp_response(TimestampRequest.from_json(request.json), callback_log).to_json(), 201
 
 
 @app.route(API_ROUTE_BASE + 'signed', methods=["GET"])

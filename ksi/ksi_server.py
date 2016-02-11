@@ -42,7 +42,7 @@ class KSIServer:
             filename_public_key = filename_private_key.replace("private", "public", 1)
             self.signer.export_keys(filename_public_key, filename_private_key)
 
-    def send_request(self, request: TimestampRequest, callback) -> TimestampResponse:
+    def get_timestamp_response(self, request: TimestampRequest, callback) -> TimestampResponse:
         """
         Send a timestamp response for a given request, check if the fields of TimestampRequest object are valid.
         :param request: The request to answer to

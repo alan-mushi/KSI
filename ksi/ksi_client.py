@@ -143,7 +143,7 @@ class KSIClient:
             self.sign_callback(response)
 
         else:
-            self.server.send_request(request, lambda _response: self.sign_callback(_response))
+            self.server.get_timestamp_response(request, lambda _response: self.sign_callback(_response))
 
     def sign_callback(self, response: TimestampResponse):
         """
