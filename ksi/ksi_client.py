@@ -1,8 +1,10 @@
 import logging
+from email import header
+
+import requests
 from datetime import datetime, timedelta
 from time import sleep
 from copy import copy
-import requests
 
 from ksi.certificate import Certificate
 from ksi.keys import Keys
@@ -33,9 +35,14 @@ class KSIClient:
         x = hash(message || z_i)
     """
 
-    def __init__(self, server: KSIServer, dao: DAOClient, certificate: Certificate=None, keys: Keys=None, ID_C_str: str="client"):
+    def __init__(self, server: KSIServer, dao: DAOClient, certificate: Certificate=None, keys: Keys=None,
+                 ID_C_str: str="client", api_user: str="", api_password: str="", api_ID_S: str=""):
         """
         Create a new client with the provided parameters.
+        This constructor support 2 "modes": local and API. API uses the REST API (requires a server). The local variant
+        is the "legacy" version, although it is great for testing purposes (i.e. with travis or unit-testing).
+        To use the local version you must set the server argument and leave api_* arguments. To use the API you do the
+        opposite, that is set server to None and fill api_*.
         :param server: The server to ask for timestamps
         :type server: KSIServer
         :param certificate: The client's certificate. It can be None in which case it is filled with self.keys.
@@ -44,12 +51,28 @@ class KSIClient:
         :type keys: Keys
         :param ID_C_str: The client's identifier string
         :type ID_C_str: str
+        :param api_user: The client's username for the API HTTP Basic Auth
+        :type api_user: str
+        :param api_password: The client's password for the API HTTP Basic Auth
+        :type api_password: str
+        :param api_ID_S: The ID_S for the server if you are using the API (i.e. server must be None)
+        :type api_ID_S: str
         """
-        assert isinstance(server, KSIServer) and isinstance(dao, DAOClient)
-
+        assert isinstance(dao, DAOClient)
+        assert isinstance(api_user, str) and isinstance(api_password, str) and isinstance(api_ID_S, str)
         self.server = server
+
+        if self.server:
+            assert isinstance(server, KSIServer) and api_ID_S == "" and api_user == "" and api_password == ""
+            self.server_id = server.ID_S
+        else:
+            assert api_ID_S != "" and api_user != "" and api_password != ""
+            self.server_id = Identifier(api_ID_S)
+
         self.dao = dao
         self.keys = keys
+        self.api_user = api_user
+        self.api_password = api_password
 
         # Generate keys with default values
         if not self.keys:
@@ -64,7 +87,7 @@ class KSIClient:
             z_0 = self.keys.keys[0].hash
             r = self.keys.hash_tree_root.hash
             t_0 = datetime.utcnow()
-            self.certificate = Certificate(Identifier(ID_C_str), z_0, r, t_0, self.server.ID_S, self.keys.l)
+            self.certificate = Certificate(Identifier(ID_C_str), z_0, r, t_0, self.server_id, self.keys.l)
 
         dao.publish_certificate(self.certificate)
 
@@ -113,9 +136,13 @@ class KSIClient:
 
         # Create the request and send it to the server to get S_t
         if use_rest_api:
-            r = requests.post(API_HOST_PORT + API_ROUTE_BASE + 'sign', data=request.to_json())
-            response = TimestampResponse.from_json(r.json())
-            self.sign_callback(response)  # TODO: test
+            assert self.api_user != "" and self.api_password != ""
+            r = requests.post(API_HOST_PORT + API_ROUTE_BASE + 'sign', data=request.to_json(),
+                              auth=(self.api_user, self.api_password),
+                              headers={'Content-Type': 'application/json'})
+            response = TimestampResponse.from_json_dict(r.json())
+            self.sign_callback(response)
+
         else:
             self.server.send_request(request, lambda _response: self.sign_callback(_response))
 

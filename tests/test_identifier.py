@@ -10,4 +10,4 @@ class TestIdentifier(TestCase):
         normal_ident_str = "herculepoirot"
         normal_ident = Identifier(normal_ident_str)
         print("id for \"" + normal_ident_str + "\": \"" + str(normal_ident) + "\"")
-        assert str(normal_ident) == IDENTIFIER_BASE_NAME + IDENTIFIER_SEPARATOR + normal_ident_str
+        assert str(normal_ident) == IDENTIFIER_BASE_NAME + normal_ident_str

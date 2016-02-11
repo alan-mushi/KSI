@@ -33,7 +33,7 @@ def hash_salt(s: str) -> bytes:
 
 
 # The list of authorized users and their hash/salted passwords (this ought to move to a DB in the future...)
-user_dict = {'client': hash_salt('password')}
+user_dict = {'client': hash_salt('password'), 'client2': hash_salt('password2')}
 
 
 def callback_log(x: TimestampResponse):
