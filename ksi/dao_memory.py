@@ -36,6 +36,12 @@ class DAOMemoryClient(DAOClient):
         self.signatures[x] = sig
         return True
 
+    def get_signature(self, x: str) -> Signature:
+        if x in self.signatures:
+            return self.signatures[x]
+        else:
+            return None
+
 
 class DAOMemoryFactory(DAOFactory):
     dao_client = None

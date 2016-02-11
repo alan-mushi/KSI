@@ -71,6 +71,16 @@ class DAOClient:
         """
         pass
 
+    def get_signature(self, x: str) -> Signature:
+        """
+        Retrieve a signature for this user based on x.
+        :param x: The "message" associated with the signature
+        :type x: str
+        :return: The signature associated to x, None if x doesn't index a signature
+        :rtype: Signature
+        """
+        pass
+
 
 class DAOFactory:
     @staticmethod
