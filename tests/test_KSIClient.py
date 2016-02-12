@@ -80,8 +80,11 @@ class TestKSIClient(TestCase):
         client = KSIClient(KSIServer(Identifier("server"), dao_factory.get_server()), dao_factory.get_client())
 
     def test_verify(self):
-        # TODO
-        # mock for coverage
         dao_factory = factory(DAOMemoryFactory)
         client = KSIClient(KSIServer(Identifier("server"), dao_factory.get_server()), dao_factory.get_client())
-        client.verify()
+        message = b'AAAA'
+        message2 = b'BBBB'
+        message3 = b'CCCC'
+        client.verify(message)
+        client.verify(message2)
+        client.verify(message3)

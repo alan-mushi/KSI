@@ -1,19 +1,19 @@
 import logging
-import requests
-from datetime import datetime, timedelta
-from time import sleep
-from copy import copy
 
-from ksi.certificate import Certificate
-from ksi.keys import Keys
-from ksi.identifier import Identifier
-from ksi.hash import hash_factory
-from ksi.merkle_tree import Node
-from ksi.ksi_server import KSIServer
-from ksi.ksi_messages import TimestampRequest, TimestampResponse, KSIErrorCodes
-from ksi.signverify import Signature
-from ksi.dao import DAOClient
+from copy import copy
+from datetime import datetime
+from time import sleep
+
+import requests
+
 from ksi import API_ROUTE_BASE, API_HOST_PORT
+from ksi.certificate import Certificate
+from ksi.dao import DAOClient
+from ksi.keys import Keys
+from ksi.ksi_messages import TimestampRequest, TimestampResponse, KSIErrorCodes
+from ksi.ksi_server import KSIServer
+from ksi.merkle_tree import Node
+from ksi.signverify import *
 
 
 class KSIClient:
@@ -276,6 +276,76 @@ class KSIClient:
 
         return current_node
 
-    def verify(self):
-        # TODO
-        pass
+    def verify_id(signature: Signature, certificate: Certificate):
+        """
+        Verify if the identifier of client and server match between the certificate and the signature
+        :param certificate: certificate to prove
+        :type certificate: Certificate
+        :return: True if identifiers matched
+        :rtype: bool
+        """
+        assert  isinstance(certificate, Certificate) and isinstance(signature, Signature)
+
+        ID_certificate_C = certificate.id_client
+        ID_certificate_S = certificate.id_server
+
+        ID_signature_C = signature.ID_C
+        ID_signature_S = signature.S_t.ID_S
+
+        return ID_certificate_C == ID_signature_C and ID_certificate_S == ID_signature_S
+
+
+    def verify_zi(signature: Signature, certificate: Certificate):
+        """
+        Verify if the correct z_i is used for the next step of verification of the certificate
+        :param certificate: certificate to prove
+        :type certificate: Certificate
+        :return: True if the correct z_i is used
+        :rtype: bool
+        """
+        assert  isinstance(certificate, Certificate) and isinstance(signature, Signature)
+
+        t = signature.S_t.t
+        i = signature.i
+        t0 = certificate.t_0
+
+        return t == t0 + timedelta(i)
+
+    def verify_derivation(signature: Signature, certificate: Certificate):
+        """
+        Verify that by using zi and ci the root value r is reached
+        if by i derivation of z_i, z_0 is obtain
+       :param certificate: certificate to prove
+        :type certificate: Certificate
+        :return: True if the correct z_0 are reached by derivation
+        :rtype: bool
+        """
+
+        assert  isinstance(certificate, Certificate) and isinstance(signature, Signature)
+
+        zi = signature.z_i
+        z0 = certificate.z_0
+
+        concat = bytearray(zi)
+        z_hash = hash_factory(data=concat).digest()
+        for i in range(0, signature.i):
+            z_hash = hash_factory(data=z_hash).digest()
+        return z0 == z_hash
+
+    def verify(self, message: bytes):
+        """
+        Verify the signature in the database with the certificate
+        :param message: message to recovered the signature in the dao
+        :type message: bytes
+        :return: True if the signature is correct
+        :rtype: bool
+        """
+        certificate = self.certificate
+        signature = self.dao.get_signature(message)
+        if signature != None:
+            assert isinstance(certificate, Certificate)
+            assert isinstance(signature, Signature)
+            if self.verify_id(signature,certificate) and self.verify_zi(signature,certificate):
+                return self.verify_derivation(signature,certificate)
+        else:
+            return False

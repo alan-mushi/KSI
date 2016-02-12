@@ -51,7 +51,6 @@ class Signature:
         return "({idc}, {i}, {zi}, {ci}, {st})".format(idc=str(self.ID_C), i=str(self.i), zi=str(self.z_i.hex()),
                                                        ci=str(self.c_i), st=str(self.S_t))
 
-
 class SignVerify:
     """
     Sign and Verify cryptographic signatures.
@@ -217,58 +216,6 @@ class SignVerify:
 
         return self.signer_verifier.verify(message, _signature)
 
-    def verify_id(signature: Signature, certificate: Certificate):
-       """
-        Verify the match between the certificate and the signature
-       :param certificate: The certificate to verifying the signature
-       :type certificate: Certificate
-       :return: True if the same identifiers is present in the certificate and the signature
-       :rtype: bool
-       """
-       assert  isinstance(certificate, Certificate) and isinstance(signature, Signature)
 
-       ID_certificate_C = certificate.id_client
-       ID_certificate_S = certificate.id_server
-
-       ID_signature_C = signature.ID_C
-       ID_signature_S = signature.S_t.ID_S
-
-       return ID_certificate_C == ID_signature_C and ID_certificate_S == ID_signature_S
-
-
-    def verify_zi(signature: Signature, certificate: Certificate):
-        """
-        Verify that the right zi was used
-        :param certificate:
-        :type certificate: Certificate
-        :return: True if t and t0+i are equals
-        :rtype: bool
-        """
-        assert  isinstance(certificate, Certificate) and isinstance(signature, Signature)
-
-        t = signature.S_t.t
-        i = signature.i
-        t0 = certificate.t_0
-
-        return t == t0 + timedelta(i)
-
-    def verify_root(signature: Signature, certificate: Certificate):
-        """
-        Verify that by using zi and ci the root value r is reached
-        :param certificate:
-        :type certificate: Certificate
-        :return: True is the root value is reachable
-        :rtype: bool
-        """
-        assert  isinstance(certificate, Certificate) and isinstance(signature, Signature)
-
-        zi = signature.z_i
-        z0 = certificate.z_0
-
-        concat = bytearray(zi)
-        z_hash = hash_factory(data=concat).digest()
-        for i in range(0, signature.i):
-            z_hash = hash_factory(data=z_hash).digest()
-        return z0 == z_hash
 
 
