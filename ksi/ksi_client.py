@@ -276,10 +276,12 @@ class KSIClient:
 
         return current_node
 
-    def verify_id(signature: Signature, certificate: Certificate):
+    def verify_id(self, signature: Signature, certificate: Certificate):
         """
         Verify if the identifier of client and server match between the certificate and the signature
-        :param certificate: certificate to prove
+        :param signature: Signature to be proved
+        :type signature: Signature
+        :param certificate: certificate used to prove the signature
         :type certificate: Certificate
         :return: True if identifiers matched
         :rtype: bool
@@ -295,10 +297,12 @@ class KSIClient:
         return ID_certificate_C == ID_signature_C and ID_certificate_S == ID_signature_S
 
 
-    def verify_zi(signature: Signature, certificate: Certificate):
+    def verify_zi(self, signature: Signature, certificate: Certificate):
         """
         Verify if the correct z_i is used for the next step of verification of the certificate
-        :param certificate: certificate to prove
+        :param signature: Signature to be proved
+        :type signature: Signature
+        :param certificate: certificate used to prove the signature
         :type certificate: Certificate
         :return: True if the correct z_i is used
         :rtype: bool
@@ -311,11 +315,13 @@ class KSIClient:
 
         return t == t0 + timedelta(i)
 
-    def verify_derivation(signature: Signature, certificate: Certificate):
+    def verify_derivation(self, signature: Signature, certificate: Certificate):
         """
         Verify that by using zi and ci the root value r is reached
         if by i derivation of z_i, z_0 is obtain
-       :param certificate: certificate to prove
+        :param signature: Signature to be proved
+        :type signature: Signature
+        :param certificate: certificate used to prove the signature
         :type certificate: Certificate
         :return: True if the correct z_0 are reached by derivation
         :rtype: bool
@@ -348,4 +354,4 @@ class KSIClient:
             if self.verify_id(signature,certificate) and self.verify_zi(signature,certificate):
                 return self.verify_derivation(signature,certificate)
         else:
-            return False
+           return False
