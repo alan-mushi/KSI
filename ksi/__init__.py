@@ -1,8 +1,13 @@
+from os import getenv
+
 """
 Available algorithms: md5, sha1, sha224, sha256, sha384, sha512, sha3_224, sha3_256, sha3_384, sha3_512
 Other may be available using OpenSSL.
+Warning: haraka hash was not fully tested!
 """
-HASH_ALGO = "sha3_256"
+HASH_ALGO = getenv("KSI_HASH_ALGO", "sha3_256")
+# This is a special flag used to adjust seed/data size for haraka hash functions
+HASH_ALGO_DIGEST_SIZE = int(256 / 8)
 HASH_ALGO_OID = {"sha3_256": "2.16.840.1.101.3.4.2.8",
                  "sha3_384": "2.16.840.1.101.3.4.2.9",
                  "sha3_512": "2.16.840.1.101.3.4.2.10"}
@@ -24,3 +29,9 @@ REST API base URL.
 """
 API_ROUTE_BASE = '/ksi/api/v0.1/'
 API_HOST_PORT = 'http://localhost:5000'
+
+"""
+Set to true to perform benchmarks (enable the benchmark decorators).
+"""
+PERFORM_BENCHMARKS = getenv('KSI_PERFORM_BENCHMARKS', 'False') == 'True'
+BENCHMARK_MOTIF = getenv('KSI_BENCHMARK_MOTIF', '')

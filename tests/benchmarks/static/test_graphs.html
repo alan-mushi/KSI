@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.15/d3.js"></script>
+    <script src="//code.jquery.com/jquery-1.12.0.min.js"></script>
+    <script src="metricsgraphics.js"></script>
+
+    <link href="metricsgraphics.css" rel="stylesheet" type="text/css">
+    <link href='//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css' rel='stylesheet' type='text/css'>
+    <title>Title</title>
+</head>
+<body>
+
+<div class="container">
+<div id="result" style="margin-top: 5%"></div>
+</div>
+<script>
+d3.json('data.json', function(data_all) {
+    var _data = data_all['data'];
+    var metadata = data_all['metadata'];
+    var base_date_str = new Date().toISOString().split('T')[0];
+
+	for (var j = 0; j < _data.length; j++) {
+		//data = _data[j];
+
+		for (var i = 0; i < _data[j].length; i++) {
+			_data[j][i]['time'] = new Date(base_date_str + 'T0' + _data[j][i]['time'] + 'Z');
+		}
+	}
+
+    metadata['data'] = _data;
+    metadata['width'] = 1000;
+    metadata['height'] = 500;
+    metadata['target'] = '#result';
+    metadata['x_rollover_format'] = '%M min %S.%L secs for l = ';
+    //metadata['y_rollover_format'] = '';
+
+    MG.data_graphic(metadata);
+});
+</script>
+
+</body>
+</html>

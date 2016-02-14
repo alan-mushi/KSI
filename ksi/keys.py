@@ -2,6 +2,8 @@ from os import urandom
 from math import log2
 from ksi.hash import *
 from ksi.merkle_tree import *
+from ksi.bench_decorator import benchmark_decorator
+from ksi import HASH_ALGO_DIGEST_SIZE
 
 
 def is_power_of_2(num: int) -> bool:
@@ -22,7 +24,8 @@ class Keys:
     computed in __gen_keys__().
     """
 
-    def __init__(self, l: int=2 ** 16, seed: bytes=b'', seed_size: int=130):
+    @benchmark_decorator
+    def __init__(self, l: int=2 ** 16, seed: bytes=b'', seed_size: int=HASH_ALGO_DIGEST_SIZE):
         """
         Constructor for keys
         :param l: The number of keys to generate for the Merkle tree (e.g. [z_1...z_l]), must be a power of two
@@ -44,12 +47,13 @@ class Keys:
         self.hash_tree_root = None
         self.__gen_merkle_tree__()
 
+    @benchmark_decorator
     def __gen_keys__(self):
         """
         Generate the z_i hash values.
         """
-        if not self.seed:
-            self.seed = urandom(int(self.seed_size))
+        if self.seed == b'':
+            self.seed = urandom(self.seed_size)
 
         self.seed = bytes(self.seed)
         n_prev = Node(hash=hash_factory(data=self.seed).digest())
@@ -68,6 +72,7 @@ class Keys:
             n_pair.parent = Node(hash=bytes(n_impair_prev.hash))
             n_pair.parent.right_child = n_pair
 
+    @benchmark_decorator
     def __gen_merkle_tree__(self):
         """
         Generate the Merkle hash tree.

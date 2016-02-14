@@ -10,6 +10,7 @@ class TestKeys(TestCase):
     Test for Merkle Tree / key generation.
     """
     def test_genKeys(self):
+        assert HASH_ALGO == 'sha3_256'
         seed = b'ABCD'  # Do _not_ change the seed value or the following asserts will fail!
 
         keys = Keys(4, seed)
@@ -48,7 +49,7 @@ class TestKeys(TestCase):
 
     def test_genKeysRandom(self):
         # Test with random seed
-        random_keys = Keys(2**4, seed_size=16)
+        random_keys = Keys(2**4)
 
     def test_coverage(self):
         # For total coverage
