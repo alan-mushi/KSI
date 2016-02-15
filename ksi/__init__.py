@@ -3,7 +3,7 @@ from os import getenv
 """
 Available algorithms: md5, sha1, sha224, sha256, sha384, sha512, sha3_224, sha3_256, sha3_384, sha3_512
 Other may be available using OpenSSL.
-Warning: haraka hash was not fully tested!
+Warning: haraka hash was not fully tested! alg_name for Haraka: haraka_512_256, haraka_256_256
 """
 HASH_ALGO = getenv("KSI_HASH_ALGO", "sha3_256")
 # This is a special flag used to adjust seed/data size for haraka hash functions
