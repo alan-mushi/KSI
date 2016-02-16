@@ -4,7 +4,7 @@ import shelve
 
 from ksi.keys import Keys
 from ksi.bench_decorator import add_logger, LOGGER_NAME, LOGGER_DIR
-from ksi import PERFORM_BENCHMARKS, HASH_ALGO
+from ksi import PERFORM_BENCHMARKS, HASH_ALGO, BENCHMARK_MOTIF
 
 
 MAX_L_POW = 20
@@ -17,6 +17,7 @@ if __name__ == '__main__':
     add_logger()
     logging.basicConfig(level=logging.INFO)
     assert PERFORM_BENCHMARKS is True  # This switch need to be enabled!
+    assert BENCHMARK_MOTIF == "ksi.keys"
 
     l_nums = list(map(lambda i: 2 ** i, [i for i in range(2, MAX_L_POW+1)]))
     _max_l = 2 ** MAX_L_POW

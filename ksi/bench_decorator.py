@@ -21,7 +21,7 @@ def benchmark_decorator(func):
     def wrapped_func(*args, **kwargs):
         if PERFORM_BENCHMARKS and func.__module__.startswith(BENCHMARK_MOTIF):
             start_t = datetime.now()
-            func(*args, **kwargs)
+            ret = func(*args, **kwargs)
             end_t = datetime.now()
 
             # Use our custom logger
@@ -37,8 +37,9 @@ def benchmark_decorator(func):
 
             # Log with the custom logger at a custom level
             logger.log(LOGGER_LEVEL, '%s|%s', func.__module__ + "." + func.__name__, str(end_t - start_t))
+            return ret
 
         else:
-            func(*args, **kwargs)
+            return func(*args, **kwargs)
 
     return wrapped_func

@@ -13,7 +13,7 @@ HASH_ALGO_OID = {"sha3_256": "2.16.840.1.101.3.4.2.8",
                  "sha3_512": "2.16.840.1.101.3.4.2.10"}
 
 """
-Used by the Identifier, see Identifier's documentation
+Used by the Identifier, see Identifier's documentation.
 """
 IDENTIFIER_SEPARATOR = '.'
 IDENTIFIER_BASE_NAME = "org" + IDENTIFIER_SEPARATOR + "ksi" + IDENTIFIER_SEPARATOR
