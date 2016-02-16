@@ -5,6 +5,7 @@ from ksi.identifier import Identifier
 from ksi.ksi_messages import TimestampRequest, TimestampResponse, KSIErrorCodes
 from ksi.signverify import SignVerify, SIGN_KEY_FORMAT
 from ksi.dao import DAOServer
+from ksi.bench_decorator import benchmark_decorator
 
 
 class KSIServer:
@@ -42,6 +43,7 @@ class KSIServer:
             filename_public_key = filename_private_key.replace("private", "public", 1)
             self.signer.export_keys(filename_public_key, filename_private_key)
 
+    @benchmark_decorator
     def get_timestamp_response(self, request: TimestampRequest, callback) -> TimestampResponse:
         """
         Send a timestamp response for a given request, check if the fields of TimestampRequest object are valid.
@@ -67,6 +69,7 @@ class KSIServer:
         callback(response)
         return response
 
+    @benchmark_decorator
     def __client_certificate_is_valid__(self, ID_C: Identifier, current_time: datetime) -> KSIErrorCodes:
         """
         Check if the client identified by ID_C have a valid certificate.

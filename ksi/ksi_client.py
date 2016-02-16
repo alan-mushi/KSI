@@ -1,10 +1,8 @@
 import logging
-
-from copy import copy
-from datetime import datetime
-from time import sleep
-
 import requests
+from copy import copy
+from datetime import datetime, timedelta
+from time import sleep
 
 from ksi import API_ROUTE_BASE, API_HOST_PORT
 from ksi.certificate import Certificate
@@ -14,6 +12,8 @@ from ksi.ksi_messages import TimestampRequest, TimestampResponse, KSIErrorCodes
 from ksi.ksi_server import KSIServer
 from ksi.merkle_tree import Node
 from ksi.signverify import *
+from ksi.bench_decorator import benchmark_decorator
+from ksi.hash import hash_factory
 
 
 class KSIClient:
@@ -93,6 +93,7 @@ class KSIClient:
         self.requests = {}
         self.logger = logging.getLogger(__name__ + '.' + self.__class__.__name__)
 
+    @benchmark_decorator
     def sign(self, message: bytes, use_rest_api=False):
         """
         Ask the server to sign the message.
@@ -114,8 +115,7 @@ class KSIClient:
 
         # Compute the time difference between now and t_0 of the certificate
         time_delta = current_time - self.certificate.t_0  # type: timedelta
-        # time_delta + 1 is meant to correct the index (in case we sign using the first z_i we want to use z_1 and
-        # not z_0)
+        # time_delta + 1 is meant to correct the index
         time_delta_offset = int(time_delta.total_seconds()) + 1
 
         if time_delta_offset < 0:
@@ -145,6 +145,7 @@ class KSIClient:
         else:
             self.server.get_timestamp_response(request, lambda _response: self.sign_callback(_response))
 
+    @benchmark_decorator
     def sign_callback(self, response: TimestampResponse):
         """
         Called when the server did the timestamp on our timestamp request.
@@ -156,7 +157,8 @@ class KSIClient:
         self.logger.debug("Got a response for the timestamp request %s: %s", response.x.hex(), response)
 
         if response.status_code != KSIErrorCodes.NO_ERROR:
-            self.logger.info("Got a response with an error status code (%s): %s", str(response.status_code), str(response))
+            self.logger.info("Got a response with an error status code (%s): %s", str(response.status_code),
+                             str(response))
             return
 
         z_i, i, x = self.requests[response.x.hex()]
@@ -169,6 +171,7 @@ class KSIClient:
         sig = Signature(self.certificate.id_client, i, z_i.hash, hash_chain, response)
         self.dao.publish_signature(x, sig)
 
+    @benchmark_decorator
     def __compute_hash_chain__(self, z_i: Node, pair_i: bool) -> Node:
         """
         Clone the nodes used in the hash chain (z_i to root of the Merkle tree).
@@ -276,82 +279,45 @@ class KSIClient:
 
         return current_node
 
-    def verify_id(self, signature: Signature, certificate: Certificate):
+    @staticmethod
+    def _verify_derivation(signature: Signature, certificate: Certificate):
         """
-        Verify if the identifier of client and server match between the certificate and the signature
-        :param signature: Signature to be proved
+        Verify that by using zi and computing the hash recursively we reach z_0.
+        :param signature: Signature to be verified
         :type signature: Signature
-        :param certificate: certificate used to prove the signature
+        :param certificate: certificate of the user who emitted the signature
         :type certificate: Certificate
-        :return: True if identifiers matched
+        :return: True if the correct z_0 is reached by derivation
         :rtype: bool
         """
-        assert  isinstance(certificate, Certificate) and isinstance(signature, Signature)
+        assert isinstance(certificate, Certificate) and isinstance(signature, Signature)
 
-        ID_certificate_C = certificate.id_client
-        ID_certificate_S = certificate.id_server
+        z_hash = hash_factory(data=signature.z_i).digest()
 
-        ID_signature_C = signature.ID_C
-        ID_signature_S = signature.S_t.ID_S
-
-        return ID_certificate_C == ID_signature_C and ID_certificate_S == ID_signature_S
-
-
-    def verify_zi(self, signature: Signature, certificate: Certificate):
-        """
-        Verify if the correct z_i is used for the next step of verification of the certificate
-        :param signature: Signature to be proved
-        :type signature: Signature
-        :param certificate: certificate used to prove the signature
-        :type certificate: Certificate
-        :return: True if the correct z_i is used
-        :rtype: bool
-        """
-        assert  isinstance(certificate, Certificate) and isinstance(signature, Signature)
-
-        t = signature.S_t.t
-        i = signature.i
-        t0 = certificate.t_0
-
-        return t == t0 + timedelta(i)
-
-    def verify_derivation(self, signature: Signature, certificate: Certificate):
-        """
-        Verify that by using zi and ci the root value r is reached
-        if by i derivation of z_i, z_0 is obtain
-        :param signature: Signature to be proved
-        :type signature: Signature
-        :param certificate: certificate used to prove the signature
-        :type certificate: Certificate
-        :return: True if the correct z_0 are reached by derivation
-        :rtype: bool
-        """
-
-        assert  isinstance(certificate, Certificate) and isinstance(signature, Signature)
-
-        zi = signature.z_i
-        z0 = certificate.z_0
-
-        concat = bytearray(zi)
-        z_hash = hash_factory(data=concat).digest()
         for i in range(0, signature.i):
             z_hash = hash_factory(data=z_hash).digest()
-        return z0 == z_hash
 
-    def verify(self, message: bytes):
+        return certificate.z_0 == z_hash
+
+    def verify(self, message: str) -> bool:
         """
         Verify the signature in the database with the certificate
         :param message: message to recovered the signature in the dao
-        :type message: bytes
-        :return: True if the signature is correct
+        :type message: str
+        :return: True if the signature is correct, False otherwise
         :rtype: bool
         """
-        certificate = self.certificate
         signature = self.dao.get_signature(message)
-        if signature != None:
-            assert isinstance(certificate, Certificate)
-            assert isinstance(signature, Signature)
-            if self.verify_id(signature,certificate) and self.verify_zi(signature,certificate):
-                return self.verify_derivation(signature,certificate)
-        else:
-           return False
+
+        if signature is None:
+            return False
+
+        certificate = self.certificate
+        assert isinstance(certificate, Certificate)
+        assert isinstance(signature, Signature)
+
+        z_i_used_is_valid = signature.S_t.t == certificate.t_0 + timedelta(seconds=signature.i)
+        identifiers_match = certificate.id_client == signature.ID_C and certificate.id_server == signature.S_t.ID_S
+
+        if identifiers_match and z_i_used_is_valid:
+            return self._verify_derivation(signature, certificate)

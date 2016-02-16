@@ -1,16 +1,13 @@
-from datetime import timedelta
-
 from Crypto.PublicKey import RSA  # ElGamal and DSA are also available
 from Crypto.Signature import PKCS1_v1_5
+from Crypto.Hash import SHA
 from base64 import standard_b64encode, standard_b64decode
 
 from ksi import SIGN_KEY_LEN, SIGN_KEY_FORMAT
 from ksi.ksi_messages import TimestampResponse
-from ksi.certificate import Certificate
 from ksi.merkle_tree import Node
 from ksi.identifier import Identifier
-from Crypto.Hash import SHA
-from ksi.hash import *
+from ksi.bench_decorator import benchmark_decorator
 
 
 class Signature:
@@ -50,6 +47,7 @@ class Signature:
         """
         return "({idc}, {i}, {zi}, {ci}, {st})".format(idc=str(self.ID_C), i=str(self.i), zi=str(self.z_i.hex()),
                                                        ci=str(self.c_i), st=str(self.S_t))
+
 
 class SignVerify:
     """
@@ -117,7 +115,7 @@ class SignVerify:
         :param filename_private_key: The private key will be written to this filename.
         :type filename_private_key: str
         """
-        assert self.key.has_private() and self.key.publickey() and self.key.can_sign()
+        assert self.key and self.key.has_private() and self.key.publickey() and self.key.can_sign()
         assert isinstance(filename_private_key, str) and len(filename_private_key) != 0
         assert isinstance(filename_public_key, str) and len(filename_public_key) != 0
 
@@ -127,6 +125,7 @@ class SignVerify:
         with open(filename_private_key, 'wb') as file:
             file.write(self.key.exportKey(SIGN_KEY_FORMAT))
 
+    @benchmark_decorator
     def sign(self, sig: TimestampResponse, base64_encode: bool=True) -> (bytes, TimestampResponse):
         """
         Fill the field sig.signature by signing the message.
@@ -182,18 +181,21 @@ class SignVerify:
 
         return S_t_x_bytes + b'|' + bytes(S_t.t.isoformat(), encoding='ascii') + b'|' + bytes(s_id_c, encoding="ascii")
 
-    def verify(self, sig: TimestampResponse, base64_encoded: bool=True) -> True:
+    @benchmark_decorator
+    def verify(self, msg: bytes, sig: Signature, base64_encoded: bool=True) -> True:
         """
         Verify a Signature object, this is a proxy method for self._verify().
+        :param msg: The signed message
+        :type msg: bytes
         :param sig: The signature containing a TimestampResponse object.
         :type sig: Signature
         :param base64_encoded: The signature is encoded in base64 (standard)
         :type base64_encoded: bool
         :return: True if the signature is correct for the message (see __msg__), False otherwise
         """
-        assert isinstance(sig, TimestampResponse) and self.key and self.key.publickey()
+        assert isinstance(msg, bytes) and isinstance(sig, TimestampResponse) and self.key and self.key.publickey()
 
-        return self._verify(self.__msg__(sig), sig.signature, base64_encoded)
+        return self._verify(msg, sig.signature, base64_encoded)
 
     def _verify(self, message: bytes, signature: bytes, base64_encoded: bool=True) -> bool:
         """
@@ -214,7 +216,7 @@ class SignVerify:
         if base64_encoded:
             _signature = standard_b64decode(_signature)
 
-        return self.signer_verifier.verify(message, _signature)
+        return self.signer_verifier.verify(SHA.new(message), _signature)
 
 
 
