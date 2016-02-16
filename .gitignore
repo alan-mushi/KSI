@@ -58,3 +58,5 @@ target/
 
 tests/output/*
 .idea/
+
+*.shelve

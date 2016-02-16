@@ -25,7 +25,11 @@ if __name__ == '__main__':
     for l in l_nums:
         open(LOGGER_DEFAULT_OUTFILE, 'w+').close()
         print("Computing time: \t{} / {}".format(l, _max_l))
+
+        # Benchmark Start
         keys = Keys(l=l)
+        # Benchmark End
+
         logger = logging.getLogger(LOGGER_NAME)
 
         for h in logger.handlers:

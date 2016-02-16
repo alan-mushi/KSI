@@ -22,7 +22,7 @@ IDENTIFIER_BASE_NAME = "org" + IDENTIFIER_SEPARATOR + "ksi" + IDENTIFIER_SEPARAT
 """
 Used by SignFactory, see SignFactory's documentation.
 """
-SIGN_KEY_LEN = 2048  # Power of 2 >= 1024 and <= 4096
+SIGN_KEY_LEN = int(getenv("KSI_SIGN_KEY_LEN", "2048"))  # Power of 2 >= 1024 and <= 4096
 SIGN_KEY_FORMAT = "PEM"  # "PEM" or "DER"
 
 """
