@@ -55,12 +55,11 @@ class Keys:
         if self.seed == b'':
             self.seed = urandom(self.seed_size)
 
-        self.seed = bytes(self.seed)
-        n_prev = Node(hash=hash_factory(data=self.seed).digest())
+        n_prev = Node(hash=hash_factory(data=bytes(self.seed)).digest())
         self.keys.insert(0, n_prev)
 
         for i in range(1, self.l + 1):
-            n = Node(hash=hash_factory(data=n_prev.hash).digest())
+            n = Node(hash=hash_factory(data=bytes(n_prev.hash)).digest())
             self.keys.insert(0, n)
             n_prev = n
 

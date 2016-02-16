@@ -5,6 +5,7 @@ from ksi import HASH_ALGO
 def hash_factory(alg_name=HASH_ALGO, data=b''):
     """
     Return a hash object initialized with data (if present).
+    Support for Haraka is **experimental**.
     :param alg_name: Hash algorithm name (e.g. sha1, sha3...), must be available in hashlib/sha3 modules
     :param data: Initialize the hash object with data
     :return: A hash object (of unknown type)
