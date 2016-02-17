@@ -27,18 +27,23 @@ class DAOMemoryClient(DAOClient):
         super().__init__()
         self.signatures = {}
         self.client_certificates = client_certificates
+        self.msg_to_x = {}
 
     def publish_certificate(self, cert: Certificate) -> bool:
         self.client_certificates[str(cert.id_client)] = cert
         return True
 
-    def publish_signature(self, x: str, sig: Signature) -> bool:
+    def publish_signature(self, x: str, msg: bytes, sig: Signature) -> bool:
+        if msg in self.msg_to_x:
+            return False
+
+        self.msg_to_x[msg] = x
         self.signatures[x] = sig
         return True
 
-    def get_signature(self, x: str) -> Signature:
-        if x in self.signatures:
-            return self.signatures[x]
+    def get_signature(self, msg: bytes) -> Signature:
+        if msg in self.msg_to_x and self.msg_to_x[msg] in self.signatures:
+            return self.signatures[self.msg_to_x[msg]]
         else:
             return None
 

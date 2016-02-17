@@ -44,8 +44,8 @@ class TestKSIClient(TestCase):
 
         # Compute graphviz only the hash chain
         print("Signatures: ")
-        for k, v in client.dao.signatures.items(): # type: _sha3.SHA3, Signature
-            print("[{k}] = {v}".format(k=k.hexdigest(), v=v))
+        for k, v in client.dao.signatures.items():  # type: _sha3.SHA3, Signature
+            print("[{k}] = {v}".format(k=k, v=v))
             assert v.S_t.status_code == KSIErrorCodes.NO_ERROR
             g2 = graphviz.Digraph(name="hash chain", directory="./output", format="dot", node_attr={"shape": "box"})
             g2 = v.c_i.to_graphviz(g2)
@@ -64,8 +64,8 @@ class TestKSIClient(TestCase):
 
         # Compute graphviz only the hash chain
         print("Signatures: ")
-        for k, v in client.dao.signatures.items(): # type: _sha3.SHA3, Signature
-            print("[{k}] = {v}".format(k=k.hexdigest(), v=v))
+        for k, v in client.dao.signatures.items():  # type: _sha3.SHA3, Signature
+            print("[{k}] = {v}".format(k=k, v=v))
             g4 = graphviz.Digraph(name="hash chain 2", directory="./output", format="dot", node_attr={"shape": "box"})
             g4 = v.c_i.to_graphviz(g4)
             g4.render()
@@ -73,7 +73,7 @@ class TestKSIClient(TestCase):
         sleep(l-sleep_counter-1)
 
         with self.assertRaises(ValueError):
-            client.sign(b'CCC')
+            client.sign(b'CCCC')
 
     def test_sign_coverage(self):
         dao_factory = factory(DAOMemoryFactory)
@@ -82,10 +82,10 @@ class TestKSIClient(TestCase):
     def test_verify(self):
         dao_factory = factory(DAOMemoryFactory)
         client = KSIClient(KSIServer(Identifier("server"), dao_factory.get_server()), dao_factory.get_client())
-        message = b'AAAA'
+        message = b'DDDD'
         client.sign(message)
-        message2 = b'BBBB'
-        # TODO: The following test doesn't work yet and break the continuous integration (Travis)
-        # sleep(3)
-        # assert client.verify(message)
-        # assert client.verify(message2) == False
+        signed_requests = dao_factory.get_server().get_signed_requests()
+
+        # Message signed:
+        sig = dao_factory.get_client().get_signature(message)
+        self.assertTrue(client.verify(sig, client.certificate, signed_requests))

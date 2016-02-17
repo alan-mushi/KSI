@@ -142,7 +142,7 @@ class SignVerify:
         """
         assert isinstance(sig, TimestampResponse)
 
-        msg = self.__msg__(sig)
+        msg = self.msg(sig)
         sig.signature = self._sign(msg, base64_encode)
 
         return msg, sig
@@ -167,7 +167,7 @@ class SignVerify:
         return res
 
     @staticmethod
-    def __msg__(S_t: TimestampResponse) -> bytes:
+    def msg(S_t: TimestampResponse) -> bytes:
         """
         Return the message to be signed as bytes: x || '|' || t.isoformat() || '|' || ID_C.
         '|' act as a separator.
@@ -195,7 +195,7 @@ class SignVerify:
         :type sig: TimestampResponse
         :param base64_encoded: The signature is encoded in base64 (standard)
         :type base64_encoded: bool
-        :return: True if the signature is correct for the message (see __msg__), False otherwise
+        :return: True if the signature is correct for the message (see msg), False otherwise
         """
         assert isinstance(msg, bytes) and isinstance(sig, TimestampResponse) and self.key and self.key.publickey()
 

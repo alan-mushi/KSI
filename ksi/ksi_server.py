@@ -63,7 +63,7 @@ class KSIServer:
 
         if status_code is KSIErrorCodes.NO_ERROR:
             msg, response = self.signer.sign(response)
-            self.dao.publish_signed_request(msg, response)
+            assert self.dao.publish_signed_request(msg, response)
 
         self.logger.info("Responding with St: %s", str(response))
         callback(response)
