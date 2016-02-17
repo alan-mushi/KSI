@@ -66,11 +66,15 @@ class SignVerify:
         self.key = None
         self.signer_verifier = None
 
-    def generate_keys(self):
+    def generate_keys(self, key_len: int=SIGN_KEY_LEN):
         """
-        Generate a pair of Public/Secret RSA key of length SIGN_KEY_LEN.
+        Generate a pair of Public/Secret RSA key of length key_len..
+        :param key_len: The length of the key to generate
+        :type key_len: int
         """
-        self.key = RSA.generate(SIGN_KEY_LEN)
+        assert isinstance(key_len, int)
+
+        self.key = RSA.generate(key_len)
         self.signer_verifier = PKCS1_v1_5.new(self.key)
 
     def import_private_keys(self, filename: str):
@@ -182,13 +186,13 @@ class SignVerify:
         return S_t_x_bytes + b'|' + bytes(S_t.t.isoformat(), encoding='ascii') + b'|' + bytes(s_id_c, encoding="ascii")
 
     @benchmark_decorator
-    def verify(self, msg: bytes, sig: Signature, base64_encoded: bool=True) -> True:
+    def verify(self, msg: bytes, sig: TimestampResponse, base64_encoded: bool=True) -> True:
         """
         Verify a Signature object, this is a proxy method for self._verify().
         :param msg: The signed message
         :type msg: bytes
-        :param sig: The signature containing a TimestampResponse object.
-        :type sig: Signature
+        :param sig: The TimestampResponse object containing the signature
+        :type sig: TimestampResponse
         :param base64_encoded: The signature is encoded in base64 (standard)
         :type base64_encoded: bool
         :return: True if the signature is correct for the message (see __msg__), False otherwise
