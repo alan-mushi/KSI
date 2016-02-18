@@ -12,7 +12,32 @@ class DAOMemoryServer(DAOServer):
         self.client_certificates = client_certificates
 
     def publish_signed_request(self, msg: bytes, resp: TimestampResponse) -> bool:
-        self.signed[msg] = resp.signature
+        """
+        In json this looks like:
+        {
+            "org.ksi.client1": {
+                "2016-02-18T21:24:56.082991": {
+                    b'AAAA': "<sig in base64>",
+                    b'BBBB': "<sig in base64>",
+                    ...
+                },
+                "2016-03-21T23:54:50.181911": {
+                    b'AAAA': "<sig in base64>"
+                }, ...
+            },
+            "org.ksi.client2": { /* no signatures yet */ },
+            ...
+        }
+        """
+        s_id_c = str(resp.ID_C)
+
+        if s_id_c not in self.signed:
+            self.signed[s_id_c] = {}
+
+        if resp.t.isoformat() not in self.signed[s_id_c]:
+            self.signed[s_id_c][resp.t.isoformat()] = {}
+
+        self.signed[s_id_c][resp.t.isoformat()][msg] = resp.signature
         return True
 
     def get_user_certificate(self, id_client: Identifier) -> Certificate:

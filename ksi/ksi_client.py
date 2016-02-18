@@ -335,7 +335,8 @@ class KSIClient:
         :type signature: Signature
         :param emitter_cert: The certificate of the emitter of the message
         :type emitter_cert: Certificate
-        :param signed_requets:
+        :param signed_requets: Signed requests an identity at the appropriate time (time and identity extracted from
+            signature)
         :type signed_requets: dict
         :return: True if the signature is correct, False otherwise
         :rtype: bool

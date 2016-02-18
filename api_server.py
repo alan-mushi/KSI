@@ -77,7 +77,14 @@ def get_signed_timestamps():
     """
     Return all the signed timestamps/requests, see API reference in the wiki.
     """
-    res = {bytes_to_base64_str(k): str(v, encoding='ascii') for k, v in dao.get_signed_requests().items()}
+    # res = {bytes_to_base64_str(k): str(v, encoding='ascii') for k, v in dao.get_signed_requests().items()}
+    res = {}
+
+    for k, v in dao.get_signed_requests().items():
+        res[k] = {}
+
+        for _k, _v in v.items():
+            res[k][_k] = {bytes_to_base64_str(__k): str(__v, encoding='ascii') for __k, __v in _v.items()}
 
     return jsonify({'signed_timestamps': res})
 

@@ -77,15 +77,16 @@ class TestKSIClient(TestCase):
 
     def test_sign_coverage(self):
         dao_factory = factory(DAOMemoryFactory)
-        client = KSIClient(KSIServer(Identifier("server"), dao_factory.get_server()), dao_factory.get_client())
+        KSIClient(KSIServer(Identifier("server"), dao_factory.get_server()), dao_factory.get_client())
 
     def test_verify(self):
         dao_factory = factory(DAOMemoryFactory)
         client = KSIClient(KSIServer(Identifier("server"), dao_factory.get_server()), dao_factory.get_client())
         message = b'DDDD'
         client.sign(message)
-        signed_requests = dao_factory.get_server().get_signed_requests()
+        signed_requests_user = dao_factory.get_server().get_signed_requests()[str(client.certificate.id_client)]
 
         # Message signed:
         sig = dao_factory.get_client().get_signature(message)
-        self.assertTrue(client.verify(sig, client.certificate, signed_requests))
+        signed_requests_time = signed_requests_user[sig.S_t.t.isoformat()]
+        self.assertTrue(client.verify(sig, client.certificate, signed_requests_time))
