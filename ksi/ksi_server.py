@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from ksi.identifier import Identifier
 from ksi.ksi_messages import TimestampRequest, TimestampResponse, KSIErrorCodes
-from ksi.signverify import SignVerify, SIGN_KEY_FORMAT
+from ksi.signverify import SignVerify, SIGN_KEY_FORMAT, Signature
 from ksi.dao import DAOServer
 from ksi.bench_decorator import benchmark_decorator
 
@@ -44,15 +44,15 @@ class KSIServer:
             self.signer.export_keys(filename_public_key, filename_private_key)
 
     @benchmark_decorator
-    def get_timestamp_response(self, request: TimestampRequest, callback) -> TimestampResponse:
+    def get_timestamp_response(self, request: TimestampRequest, callback) -> Signature:
         """
         Send a timestamp response for a given request, check if the fields of TimestampRequest object are valid.
         :param request: The request to answer to
         :type request: TimestampRequest
         :param callback: The function to callback once the TimestampResponse is computed.
-            This callback have the following signature: callback(response: TimestampResponse)
-        :return: The TimestampResponse object (the very same one passed to the callback)
-        :rtype: TimestampResponse
+            This callback have the following signature: callback(response: TimestampResponse) -> Signature
+        :return: The Signature object returned by the callback
+        :rtype: Signature
         """
         assert isinstance(request, TimestampRequest)
 
@@ -66,8 +66,8 @@ class KSIServer:
             assert self.dao.publish_signed_request(msg, response)
 
         self.logger.info("Responding with St: %s", str(response))
-        callback(response)
-        return response
+
+        return callback(response)
 
     @benchmark_decorator
     def __client_certificate_is_valid__(self, ID_C: Identifier, current_time: datetime) -> KSIErrorCodes:

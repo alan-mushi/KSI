@@ -59,27 +59,11 @@ class DAOClient:
         """
         pass
 
-    def publish_signature(self, x: str, msg: bytes, sig: Signature) -> bool:
+    def publish_signature(self, sig: Signature) -> bool:
         """
         Publish a signature on a document.
-        :param x: The "message" associated with the signature
-        :type x: str
-        :param msg: The message
-        :type msg: bytes
         :param sig: The signature to publish
         :type sig: Signature
-        :return: True if the signature was published, False otherwise
-        :rtype: bool
-        """
-        pass
-
-    def get_signature(self, msg: bytes) -> Signature:
-        """
-        Retrieve a signature for this user based on the message.
-        :param msg: The "message" associated with the signature
-        :type msg: bytes
-        :return: The signature associated to x, None if x doesn't index a signature
-        :rtype: Signature
         """
         pass
 

@@ -102,7 +102,7 @@ class KSIClient:
         self.verifier.import_public_keys(public_key_filename)
 
     @benchmark_decorator
-    def sign(self, message: bytes, use_rest_api=False):
+    def sign(self, message: bytes, use_rest_api=False) -> Signature:
         """
         Ask the server to sign the message.
         At the end of this function self.requests will contain an entry at x for self.sign_callback().
@@ -110,6 +110,8 @@ class KSIClient:
         :type message: bytes
         :param use_rest_api: Set to True if you want to use the remote REST API, False otherwise (e.g. travis)
         :type use_rest_api: bool
+        :return: The signature returned by the self.sign_callback()
+        :rtype: Signature
         """
         assert isinstance(message, bytes) and isinstance(use_rest_api, bool)
 
@@ -148,18 +150,20 @@ class KSIClient:
                               auth=(self.api_user, self.api_password),
                               headers={'Content-Type': 'application/json'})
             response = TimestampResponse.from_json_dict(r.json())
-            self.sign_callback(response)
+            return self.sign_callback(response)
 
         else:
-            self.server.get_timestamp_response(request, lambda _response: self.sign_callback(_response))
+            return self.server.get_timestamp_response(request, lambda _response: self.sign_callback(_response))
 
     @benchmark_decorator
-    def sign_callback(self, response: TimestampResponse):
+    def sign_callback(self, response: TimestampResponse) -> Signature:
         """
         Called when the server did the timestamp on our timestamp request.
         The signature is added only if: response.status_code == KSIErrorCodes.NO_ERROR
         :param response: The timestamp response for a request
         :type response: TimestampResponse
+        :return: The finalized signature object after the mandatory 1 second sleep
+        :rtype: Signature
         """
         assert isinstance(response, TimestampResponse)
         self.logger.debug("Got a response for the timestamp request %s: %s", response.x.hex(), response)
@@ -175,9 +179,11 @@ class KSIClient:
         # Mandatory, sleep one second before releasing the key otherwise forgery is possible
         sleep(1)
 
-        # Add the finalized signature to self.signatures for publication
-        sig = Signature(self.certificate.id_client, i, z_i.hash, hash_chain, response)
-        self.dao.publish_signature(x.hexdigest(), message, sig)
+        # Add the finalized signature to the DAO for publication
+        sig = Signature(self.certificate.id_client, i, z_i.hash, hash_chain, response, message)
+        self.dao.publish_signature(sig)
+
+        return sig
 
     @benchmark_decorator
     def __compute_hash_chain__(self, z_i: Node, pair_i: bool) -> Node:
@@ -328,16 +334,15 @@ class KSIClient:
 
         return res
 
-    def verify(self, signature: Signature, emitter_cert: Certificate, signed_requets: dict) -> bool:
+    def verify(self, signature: Signature, emitter_cert: Certificate, reference_msg: bytes) -> bool:
         """
         Verify the signature in the database with the certificate.
         :param signature: The signature to verify
         :type signature: Signature
         :param emitter_cert: The certificate of the emitter of the message
         :type emitter_cert: Certificate
-        :param signed_requets: Signed requests an identity at the appropriate time (time and identity extracted from
-            signature)
-        :type signed_requets: dict
+        :param reference_msg: The "reference message" (i.e. the message from which x was computed)
+        :type reference_msg: bytes
         :return: True if the signature is correct, False otherwise
         :rtype: bool
         """
@@ -352,9 +357,7 @@ class KSIClient:
         if not self.verify_hash_chain(signature, emitter_cert):
             return False
 
-        msg = self.verifier.msg(signature.S_t)
-
-        if msg not in signed_requets:
+        if signature.message != reference_msg:
             return False
 
-        return self.verifier.verify(msg, signature.S_t)
+        return self.verifier.verify(self.verifier.msg(signature.S_t), signature.S_t)

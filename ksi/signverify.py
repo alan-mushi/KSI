@@ -15,7 +15,7 @@ class Signature:
     Convenience class to hold a signature.
     """
 
-    def __init__(self, ID_C: Identifier, i: int, z_i: bytes, c_i: Node, S_t: TimestampResponse):
+    def __init__(self, ID_C: Identifier, i: int, z_i: bytes, c_i: Node, S_t: TimestampResponse, message: bytes):
         """
         Create a signature object with the provided arguments.
         :param ID_C: The client's identifier
@@ -28,10 +28,12 @@ class Signature:
         :type c_i: Node
         :param S_t: S_t (aka the TimestampResponse object delivered by the server)
         :type S_t: TimestampResponse
+        :param message: The message signed
+        :type message: bytes
         """
         assert isinstance(ID_C, Identifier)
         assert isinstance(i, int)
-        assert isinstance(z_i, bytes)
+        assert isinstance(z_i, bytes) and isinstance(message, bytes)
         assert isinstance(c_i, Node)
         assert isinstance(S_t, TimestampResponse)
 
@@ -40,13 +42,15 @@ class Signature:
         self.z_i = z_i
         self.c_i = c_i
         self.S_t = S_t
+        self.message = message
 
     def __str__(self):
         """
         :return: A string representation of the object
         """
-        return "({idc}, {i}, {zi}, {ci}, {st})".format(idc=str(self.ID_C), i=str(self.i), zi=str(self.z_i.hex()),
-                                                       ci=str(self.c_i), st=str(self.S_t))
+        return "({idc}, {i}, {zi}, {ci}, {msg}, {st})".format(idc=str(self.ID_C), i=str(self.i), zi=str(self.z_i.hex()),
+                                                              ci=str(self.c_i), msg=self.message.hex(),
+                                                              st=str(self.S_t))
 
 
 class SignVerify:
@@ -221,7 +225,3 @@ class SignVerify:
             _signature = standard_b64decode(_signature)
 
         return self.signer_verifier.verify(SHA.new(message), _signature)
-
-
-
-

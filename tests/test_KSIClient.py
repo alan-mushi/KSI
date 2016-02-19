@@ -45,7 +45,7 @@ class TestKSIClient(TestCase):
         # Compute graphviz only the hash chain
         print("Signatures: ")
         for k, v in client.dao.signatures.items():  # type: _sha3.SHA3, Signature
-            print("[{k}] = {v}".format(k=k, v=v))
+            print("[{k}] = {v}".format(k=k.hex(), v=v))
             assert v.S_t.status_code == KSIErrorCodes.NO_ERROR
             g2 = graphviz.Digraph(name="hash chain", directory="./output", format="dot", node_attr={"shape": "box"})
             g2 = v.c_i.to_graphviz(g2)
@@ -65,7 +65,7 @@ class TestKSIClient(TestCase):
         # Compute graphviz only the hash chain
         print("Signatures: ")
         for k, v in client.dao.signatures.items():  # type: _sha3.SHA3, Signature
-            print("[{k}] = {v}".format(k=k, v=v))
+            print("[{k}] = {v}".format(k=k.hex(), v=v))
             g4 = graphviz.Digraph(name="hash chain 2", directory="./output", format="dot", node_attr={"shape": "box"})
             g4 = v.c_i.to_graphviz(g4)
             g4.render()
@@ -81,12 +81,15 @@ class TestKSIClient(TestCase):
 
     def test_verify(self):
         dao_factory = factory(DAOMemoryFactory)
-        client = KSIClient(KSIServer(Identifier("server"), dao_factory.get_server()), dao_factory.get_client())
+        l = 512
+        keys = Keys(l=l, seed=b'SEED')
+        client = KSIClient(KSIServer(Identifier("server"), dao_factory.get_server()), dao_factory.get_client(),
+                           keys=keys)
         message = b'DDDD'
-        client.sign(message)
-        signed_requests_user = dao_factory.get_server().get_signed_requests()[str(client.certificate.id_client)]
+        sig = client.sign(message)
 
-        # Message signed:
-        sig = dao_factory.get_client().get_signature(message)
-        signed_requests_time = signed_requests_user[sig.S_t.t.isoformat()]
-        self.assertTrue(client.verify(sig, client.certificate, signed_requests_time))
+        self.assertTrue(client.verify(sig, client.certificate, sig.message))
+
+        # Tampering with the hash chain
+        sig.c_i.right_child.hash = b'1234567890'  # This is an arbitrary value, any other than the original one would do
+        self.assertFalse(client.verify(sig, client.certificate, sig.message))

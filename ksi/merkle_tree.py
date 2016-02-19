@@ -177,4 +177,7 @@ class Node:
                           bytearray(self.right_child.hash_chain_compute_to_root())
             self.hash = hash_factory(data=hash_concat).digest()
 
+        elif self.mark_for_graphviz == Mark.exception and self.right_child:
+            self.hash = hash_factory(data=bytes(self.right_child.hash_chain_compute_to_root())).digest()
+
         return self.hash
