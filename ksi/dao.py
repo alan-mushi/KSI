@@ -83,3 +83,7 @@ def factory(dao_type: type):
     from ksi.dao_memory import DAOMemoryFactory
     if dao_type.__name__ == DAOMemoryFactory.__name__:
         return DAOMemoryFactory()
+
+    from ksi.dao_mongo import DAOMongoFactory
+    if dao_type.__name__ == DAOMongoFactory.__name__:
+        return DAOMongoFactory()

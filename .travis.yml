@@ -8,3 +8,5 @@ addons:
 install: pip install -r requirements.txt
 before_script: mkdir output/
 script: python -m unittest discover
+services:
+  - mongodb

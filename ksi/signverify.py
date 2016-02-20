@@ -1,10 +1,12 @@
+import json
+import pickle
 from Crypto.PublicKey import RSA  # ElGamal and DSA are also available
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA
 from base64 import standard_b64encode, standard_b64decode
 
-from ksi import SIGN_KEY_LEN, SIGN_KEY_FORMAT
-from ksi.ksi_messages import TimestampResponse
+from ksi import SIGN_KEY_LEN, SIGN_KEY_FORMAT, IDENTIFIER_BASE_NAME
+from ksi.ksi_messages import TimestampResponse, bytes_to_base64_str
 from ksi.merkle_tree import Node
 from ksi.identifier import Identifier
 from ksi.bench_decorator import benchmark_decorator
@@ -51,6 +53,42 @@ class Signature:
         return "({idc}, {i}, {zi}, {ci}, {msg}, {st})".format(idc=str(self.ID_C), i=str(self.i), zi=str(self.z_i.hex()),
                                                               ci=str(self.c_i), msg=self.message.hex(),
                                                               st=str(self.S_t))
+
+    def to_json(self) -> str:
+        """
+        :return: Return the JSON string representation of the Signature object.
+        :rtype: str
+        """
+        return json.dumps({'ID_C': str(self.ID_C),
+                           'i': self.i,
+                           'z_i': bytes_to_base64_str(self.z_i),
+                           'c_i': bytes_to_base64_str(pickle.dumps(self.c_i)),
+                           'msg': bytes_to_base64_str(self.message),
+                           'S_t': self.S_t.to_json()})
+
+    @staticmethod
+    def from_json(json_obj: dict):
+        """
+        :param json_obj: A JSON representation of the Signature object
+        :type json_obj: dict
+        :return: A new Signature built from the json_obj parameter
+        :rtype: Signature
+        """
+        assert 'ID_C' in json_obj
+        assert 'i' in json_obj
+        assert 'z_i' in json_obj
+        assert 'c_i' in json_obj
+        assert 'msg' in json_obj
+        assert 'S_t' in json_obj
+
+        ID_C = Identifier(json_obj['ID_C'][len(IDENTIFIER_BASE_NAME):])
+        i = json_obj['i']
+        z_i = standard_b64decode(json_obj['z_i'])
+        c_i = pickle.loads(standard_b64decode(json_obj['c_i']))
+        msg = standard_b64decode(json_obj['msg'])
+        S_t = TimestampResponse.from_json_dict(json_obj['S_t'])
+
+        return Signature(ID_C, i, z_i, c_i, S_t, msg)
 
 
 class SignVerify:

@@ -150,7 +150,7 @@ class TimestampResponse:
         """
         :param json_obj: A JSON representation of the TimestampResponse object
         :type json_obj: dict
-        :return: A new TimestampResponse built from the json_str parameter
+        :return: A new TimestampResponse built from the json_obj parameter
         :rtype: TimestampResponse
         """
         assert 'status_code' in json_obj
