@@ -34,7 +34,7 @@ class Certificate:
         self.id_client = id_client
         self.z_0 = z_0
         self.r = r
-        self.t_0 = t_0
+        self.t_0 = t_0.replace(microsecond=0)
         self.id_server = id_server
         self.l = l
 
@@ -47,3 +47,12 @@ class Certificate:
                                                         r=str(self.r.hex()),
                                                         t0=str(self.t_0.isoformat()),
                                                         ids=str(self.id_server))
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+
+        identities_match = self.id_client == other.id_client and self.id_server == other.id_server
+        bytes_match = self.z_0 == other.z_0 and self.r == other.r
+
+        return identities_match and bytes_match and self.l == other.l and self.t_0 == other.t_0

@@ -57,7 +57,7 @@ class KSIServer:
         assert isinstance(request, TimestampRequest)
 
         self.logger.info("Received timestamp request: %s", str(request))
-        t = datetime.utcnow()  # We take the time at the reception of the request
+        t = datetime.utcnow().replace(microsecond=0)  # We take the time at the reception of the request
         status_code = self.__client_certificate_is_valid__(request.ID_C, t)
         response = TimestampResponse(request.x, self.ID_S, request.ID_C, t, status_code)
 

@@ -88,7 +88,7 @@ class KSIClient:
 
             z_0 = self.keys.keys[0].hash
             r = self.keys.hash_tree_root.hash
-            t_0 = datetime.utcnow()
+            t_0 = datetime.utcnow().replace(microsecond=0)
             self.certificate = Certificate(Identifier(ID_C_str), z_0, r, t_0, self.server_id, self.keys.l)
 
         dao.publish_certificate(self.certificate)
@@ -115,7 +115,7 @@ class KSIClient:
         """
         assert isinstance(message, bytes) and isinstance(use_rest_api, bool)
 
-        current_time = datetime.utcnow()
+        current_time = datetime.utcnow().replace(microsecond=0)
         self.logger.debug("Sign request at %s for message: %s", current_time.isoformat(), message)
 
         # Assert we have a z_i to sign this message
@@ -351,7 +351,7 @@ class KSIClient:
         if not emitter_cert.id_client == signature.ID_C and emitter_cert.id_server == signature.S_t.ID_S:
             return False
 
-        if not signature.S_t.t - (emitter_cert.t_0 + timedelta(seconds=signature.i - 1)) < timedelta(seconds=0.999999):
+        if signature.S_t.t != emitter_cert.t_0 + timedelta(seconds=signature.i - 1):
             return False
 
         if not self.verify_hash_chain(signature, emitter_cert):
