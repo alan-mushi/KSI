@@ -68,6 +68,11 @@ class DAOMongoClient(DAOClient):
         self.client_certificates = client[DAO_MONGO_CERTS_DB][DAO_MONGO_CERTS_DB_COL]
 
     def publish_certificate(self, cert: Certificate) -> bool:
+        cert_exist_in_db = self.client_certificates.find_one({'z_0': cert.z_0})
+
+        if cert_exist_in_db:
+            return False
+
         doc = {'ID_C': str(cert.id_client).replace('.', '#'),
                'ID_S': str(cert.id_server).replace('.', '#'),
                'z_0': cert.z_0,

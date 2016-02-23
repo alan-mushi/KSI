@@ -66,11 +66,11 @@ class TestKSIServer(TestCase):
         dao_memory_server = dao_factory.get_server()  # type: DAOMemoryServer
         server = KSIServer(self.id_server, dao_factory.get_server())
         l = 8
-        keys = Keys(l=l, seed=b'SEED')
-        client = KSIClient(server, dao_factory.get_client(), keys=keys)
-        dao_memory_server.client_certificates[str(client.certificate.id_client)].t_0 += timedelta(seconds=100)
+        keys = Keys(l=l, seed=b'SEED2')
+        client2 = KSIClient(server, dao_factory.get_client(), keys=keys, ID_C_str='client2')
+        dao_memory_server.client_certificates[str(client2.certificate.id_client)].t_0 += timedelta(seconds=100)
 
         with self.assertRaises(ValueError):
-            client.sign(b'AAAA')
+            client2.sign(b'AAAA')
 
         assert len(dao_factory.get_client().signatures) == 1 and len(dao_memory_server.signed) == 1

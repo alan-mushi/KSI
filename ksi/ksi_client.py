@@ -91,7 +91,7 @@ class KSIClient:
             t_0 = datetime.utcnow().replace(microsecond=0)
             self.certificate = Certificate(Identifier(ID_C_str), z_0, r, t_0, self.server_id, self.keys.l)
 
-        dao.publish_certificate(self.certificate)
+        assert dao.publish_certificate(self.certificate) is True
 
         # Dictionary of requests made (indexed by x)
         self.requests = {}

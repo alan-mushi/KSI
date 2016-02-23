@@ -54,6 +54,11 @@ class DAOMemoryClient(DAOClient):
         self.client_certificates = client_certificates
 
     def publish_certificate(self, cert: Certificate) -> bool:
+        for k, v in self.client_certificates.items():
+            # We don't allow twice the same certificate
+            if cert.z_0 == v.z_0:
+                return False
+
         self.client_certificates[str(cert.id_client)] = cert
         return True
 
