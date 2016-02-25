@@ -2,12 +2,12 @@ import os
 import json
 from datetime import datetime
 
-DIR = '/home/user/Desktop/ksi_shelves/'
+DIR = '/home/user/ksi_git/tests/benchmarks/benchmarks_output/'
 START_EXPR = 'benchmark-Keys-{}-l_'
 EXTENSION = '.log'
 MOTIF = '__init__'
 SEPARATOR = '|'
-alg_names = ['md5', 'sha256', 'sha3_224', 'sha3_256', 'sha3_384', 'sha3_512', 'whirlpool']
+alg_names = ['haraka_512_256' ,'md5' ,'ripemd160' ,'sha256' ,'sha3_224' ,'sha3_256' ,'sha3_384' ,'sha3_512' ,'whirlpool']
 
 if __name__ == '__main__':
     os.chdir(DIR)
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     metadata['legend'] = alg_names
     metadata['legend_target'] = '#legend'
     metadata['x_mouseover'] = '%M min %S.%L secs for l = '
-    metadata['colors'] = ['blue', 'orange', 'green', 'yellow', 'brown', 'black', 'fuchsia']
+    metadata['colors'] = ['blue', 'orange', 'green', 'yellow', 'brown', 'black', 'fuchsia', 'cyan', 'red']
     metadata['aggregate_rollover'] = True
     metadata['missing_is_hidden'] = True
     metadata['full_width'] = True
