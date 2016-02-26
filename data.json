@@ -1,9 +1,9 @@
 {
     "metadata": {
         "aggregate_rollover": true,
-        "x_mouseover": "%M min %S.%L secs for l = ",
+        "x_mouseover": "%M min %S.%L secs pour l (nombre de feuilles) = ",
         "y_label": "l",
-        "title": "Time spent generating user's Keys (Merkle Tree) with various algorithms",
+        "title": "",
         "x_accessor": "time",
         "y_scale_type": "linear",
         "colors": [

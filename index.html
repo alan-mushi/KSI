@@ -2,7 +2,7 @@
 <html lang="en-us">
   <head>
     <meta charset="UTF-8">
-    <title>Projet de Master 2 SSI - Keyless Signatures with Identity</title>
+    <title>Projet Master 2 SSI - Keyless Signatures with Identity</title>
 	<link href='//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css' rel='stylesheet' type='text/css'>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
@@ -18,35 +18,34 @@
   <body>
     <section class="page-header" style="margin-top: 0px;">
       <h1 class="project-name">Keyless Signatures with Identity</h1>
-      <h2 class="project-tagline"></h2>
+      <h2 class="project-tagline">Implémentation d'une <a style="color: white; text-decoration: underline;" href="https://eprint.iacr.org/2014/321.pdf">KSI</a> en Python dans le cadre du projet de Master 2.</h2>
       <a href="https://github.com/alan-mushi/KSI" class="btn">View on GitHub</a>
       <a href="https://github.com/alan-mushi/KSI/zipball/master" class="btn">Download .zip</a>
       <a href="https://github.com/alan-mushi/KSI/tarball/master" class="btn">Download .tar.gz</a>
     </section>
 
     <section class="main-content">
-<h3>
-<a id="overview" class="anchor" href="#overview" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>TODO: Intro</h3>
-
-<p>TODO: Ajouter une description ici.</p>
 
 <h3>
-<a id="benchmarks" class="anchor" href="#benchmarks" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Benchmarks des différentes fonctions de hachage</h3>
+<a id="benchmarks" class="anchor" href="#benchmarks" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Benchmarks</h3>
 
-<p>TODO: Ajouter une description ici.</p>
+<p>Les mesures ont été réalisées en utilisant les décorateurs, voir <a href="https://github.com/alan-mushi/KSI/wiki/Benchmarks">la page du wiki</a> pour plus de détails.</p>
+
+<h4>Comparaison des différentes fonctions de hachage utilisées pour la génération de l'arbre de Merkle</h4>
 
 <div class="container">
     <div id="result" style="max-width: 100rem;"></div>
 
-    <div id="legend"></div>
+    <div id="legend" align="center"></div>
 
-	<div>
-		<span>Hash functions (uncheck and reload to filter on graph):</span>
+	<div style="margin-top: 1em; margin-bottom: 1em;">
+		<p>Fonctions de hachage (décocher et recharger la page pour filtrer):</p>
 		<form id="hash_functions">
 		</form>
 	<div>
 
 	<div>
+		<p style="margin-top: 1em; margin-bottom: 1em;">Temps mesuré pour la génération de l'arbre de Merkle en fonction de la fonction de hachage utilisée et du nombre de feuilles souhaitées. Format des mesures: <code>HH:MM:SS.UUUUUU</code>.</p>
 		<table style="max-width: 80rem;">
 			<thead>
 				<tr>
@@ -285,7 +284,7 @@ d3.json('data.json', function(data_all) {
 
 	for (var i = 0; i < metadata.legend.length; i++) {
 		v = metadata.legend[i];
-		var d = $(document.createElement('input')).attr({value: i, type: 'checkbox'});
+		var d = $(document.createElement('input')).attr({value: i, type: 'checkbox', style: "margin-left: 1em;"});
 
 		if (sessionStorage.getItem(i) != "false")
 			d.attr({checked: true});
