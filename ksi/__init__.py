@@ -28,8 +28,8 @@ SIGN_KEY_FORMAT = "PEM"  # "PEM" or "DER"
 """
 REST API base URL.
 """
-API_ROUTE_BASE = '/ksi/api/v0.1/'
-API_HOST_PORT = 'http://localhost:5000'
+API_ROUTE_BASE = getenv('KSI_API_ROUTE_BASE', '/ksi/api/v0.1/')
+API_HOST_PORT = getenv('KSI_API_HOST_PORT', 'http://localhost:5000')
 
 """
 Set to true to perform benchmarks (enable the benchmark decorators).
