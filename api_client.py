@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     # dao_factory = factory(DAOMemoryFactory)
     dao_factory = factory(DAOMongoFactory)
-    client = KSIClient(None, dao_factory.get_client(), keys=Keys(l=8, seed=b'SEED'), ID_C_str="client2",
+    client = KSIClient(None, dao_factory.get_client(), keys=Keys(l=8, seed=b'SEED2'), ID_C_str="client2",
                        api_user="client2", api_password="password2", api_ID_S="server")
 
     client.sign(b'EFGH', use_rest_api=True)

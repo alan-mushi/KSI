@@ -34,8 +34,9 @@ if __name__ == '__main__':
     _max_l = 2 ** MAX_L_POW
     msg_to_sign = hash_factory(data=b'ABCDEFGHIJKLMNOPQRSTUVWXYZ').digest()
 
-    # We don't generate a private key here
+    # We don't generate a private/public key pair here:
     # ln -s /home/user/ksi_git/tests/output/private.pem /tmp/private.pem
+    # ln -s /home/user/ksi_git/tests/output/public.pem /tmp/public.pem
 
     for l in l_nums:
         keys = None
@@ -51,7 +52,7 @@ if __name__ == '__main__':
         dao_factory = factory(DAOMemoryFactory)
 
         server = KSIServer(Identifier("server"), dao_factory.get_server(), filename_private_key="/tmp/private.pem")
-        client = KSIClient(server, dao_factory.get_client(), keys=keys)
+        client = KSIClient(server, dao_factory.get_client(), keys=keys, public_key_filename="/tmp/public.pem")
 
         # Benchmark Start
         client.sign(msg_to_sign)
