@@ -1,1 +1,3 @@
-Build Status: [![Build Status](https://travis-ci.com/alan-mushi/KSI.svg?token=1G7rcWts27yvEizXDoyx&branch=master)](https://travis-ci.com/alan-mushi/KSI)
+# [Keyless Signatures with Identity](https://eprint.iacr.org/2014/321.pdf) - Master 2 project
+
+Do **not** use in production (it's a PoC... and it uses `pickle` because time was lacking).
