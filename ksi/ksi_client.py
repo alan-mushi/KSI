@@ -101,6 +101,8 @@ class KSIClient:
         self.verifier = SignVerify()
         self.verifier.import_public_keys(public_key_filename)
 
+        logging.debug("Using public key in file '{}'".format(public_key_filename))
+
     @benchmark_decorator
     def sign(self, message: bytes, use_rest_api=False) -> Signature:
         """

@@ -105,9 +105,14 @@ if __name__ == '__main__':
     clean_databases()
 
     # We add something to the DAO
-    client = KSIClient(ksi_server, dao_factory.get_client(), keys=Keys(l=8, seed=b'SEED'))
-    client.sign(b'ABCD')
-    client.sign(b'ABCD')
+    client = KSIClient(ksi_server, dao_factory.get_client(), keys=Keys(l=8, seed=b'SEED'),
+                       public_key_filename="/tmp/public_key." + SIGN_KEY_FORMAT)
+
+    sig = client.sign(b'ABCD')
+    assert client.verify(sig, client.certificate, sig.message) is True
+
+    sig2 = client.sign(b'ABCD')
+    assert client.verify(sig2, client.certificate, sig2.message) is True
 
     # Launch the API
     app.run()

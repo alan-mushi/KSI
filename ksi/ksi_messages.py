@@ -126,7 +126,7 @@ class TimestampResponse:
             status_code=str(self.status_code),
             ids=str(self.ID_S),
             t=self.t.isoformat(),
-            sig=bytes_to_base64_str(self.signature))
+            sig=self.signature)
 
     def to_json(self) -> str:
         """
@@ -169,7 +169,7 @@ class TimestampResponse:
         if json_obj['signature'] == "None":
             signature = None
         else:
-            signature = standard_b64decode(json_obj['signature'])
+            signature = bytes(json_obj['signature'], encoding="ascii")
 
         res = TimestampResponse(x, ID_S, ID_C, t, status_code)
         res.signature = signature

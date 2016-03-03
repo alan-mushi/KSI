@@ -37,6 +37,7 @@ class KSIServer:
 
         try:
             self.signer.import_private_keys(filename_private_key)
+            logging.debug("Using private key in file '{}'".format(filename_private_key))
         except FileNotFoundError:
             self.logger.error("%s does not exist, generating and exporting keys", filename_private_key)
             self.signer.generate_keys()

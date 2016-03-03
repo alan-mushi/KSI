@@ -228,7 +228,7 @@ class SignVerify:
         return S_t_x_bytes + b'|' + bytes(S_t.t.isoformat(), encoding='ascii') + b'|' + bytes(s_id_c, encoding="ascii")
 
     @benchmark_decorator
-    def verify(self, msg: bytes, sig: TimestampResponse, base64_encoded: bool=True) -> True:
+    def verify(self, msg: bytes, sig: TimestampResponse, base64_encoded: bool=True) -> bool:
         """
         Verify a Signature object, this is a proxy method for self._verify().
         :param msg: The signed message
